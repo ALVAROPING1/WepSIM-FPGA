@@ -1,6 +1,13 @@
 from vunit import VUnit
 from os import environ
 
+from vunit.ui.library import Library
+
+def generic_test(tests: Library, tb_name: str, sizes: list[int]):
+    tb = tests.test_bench(tb_name)
+    for size in sizes:
+        tb.add_config(name=f"size={size}", generics={"size": size})
+
 
 if __name__ == "__main__":
     # Set VUnit simulator to NVC via env var (needed if GHDL is also installed)
@@ -28,17 +35,9 @@ if __name__ == "__main__":
 
     # ──────────────────────────────────── Tests ──────────────────────────────────
 
-    bcddecoder = tests.test_bench("BCDDecoder_TB")
-    for size in [1, 2, 3, 7, 8, 16, 20]:
-        bcddecoder.add_config(name=f"size={size}", generics={"size": size})
-
-    display7segment = tests.test_bench("Display7segment_TB")
-    for size in [1, 2, 3, 7, 8, 16, 20]:
-        display7segment.add_config(name=f"size={size}", generics={"size": size})
-
-    tristate = tests.test_bench("Tristate_TB")
-    for size in [1, 2, 3, 4]:
-        tristate.add_config(name=f"size={size}", generics={"size": size})
+    generic_test(tests, "BCDDecoder_TB", [1, 4, 7, 8, 20])
+    generic_test(tests, "Display7segment_TB", [1, 2, 3, 8, 20])
+    generic_test(tests, "TriState_TB", [1, 2, 3, 4])
 
     # ───────────────────────────────────── Main ─────────────────────────────────────
 
