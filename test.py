@@ -36,6 +36,10 @@ if __name__ == "__main__":
     for size in [1, 2, 3, 7, 8, 16, 20]:
         display7segment.add_config(name=f"size={size}", generics={"size": size})
 
+    tristate = tests.test_bench("Tristate_TB")
+    for size in [1, 2, 3, 4]:
+        tristate.add_config(name=f"size={size}", generics={"size": size})
+
     # ───────────────────────────────────── Main ─────────────────────────────────────
 
     vu.set_sim_option("nvc.sim_flags", ["--dump-arrays"])  # pyright: ignore
