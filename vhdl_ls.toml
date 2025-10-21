@@ -1,0 +1,7 @@
+[libraries]
+src.files = [
+    "src/*.vhdl",
+]
+tests.files = [
+    "tests/*.vhdl",
+]
