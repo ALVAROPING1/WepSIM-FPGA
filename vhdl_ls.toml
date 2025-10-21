@@ -5,3 +5,14 @@ src.files = [
 tests.files = [
     "tests/*.vhdl",
 ]
+
+vunit_lib.files = [
+    ".venv/lib/*/*/vunit/vhdl/*.vhd",
+    ".venv/lib/*/*/vunit/vhdl/*/src/*.vhd",
+]
+vunit_lib.is_third_party = true
+
+osvvm.files = [
+    ".venv/lib/*/*/vunit/vhdl/osvvm/*.vhd",
+]
+osvvm.is_third_party = true
