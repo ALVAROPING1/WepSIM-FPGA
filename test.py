@@ -40,6 +40,7 @@ if __name__ == "__main__":
     generic_test("BCDDecoder_TB", ["size"], [1, 4, 7, 8, 20])
     generic_test("Display7segment_TB", ["size"], [1, 2, 3, 8, 20])
     generic_test("TriState_TB", ["size"], [1, 2, 3, 4])
+    generic_test("Reg_TB", ["size"], [1, 2, 4, 8, 16])
     generic_test(
         "Multiplexer_TB", ["size", "addresses"], [[1, 2], [1, 4], [3, 2], [3, 8]]
     )
