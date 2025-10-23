@@ -1,12 +1,22 @@
+from itertools import repeat
 from vunit import VUnit
 from os import environ
 
 from vunit.ui.library import Library
 
-def generic_test(tests: Library, tb_name: str, sizes: list[int]):
+
+def generic_test(
+    tests: Library,
+    tb_name: str,
+    generic_names: list[str],
+    test_cases: list[list[int] | int],
+):
     tb = tests.test_bench(tb_name)
-    for size in sizes:
-        tb.add_config(name=f"size={size}", generics={"size": size})
+    for case in test_cases:
+        case = case if isinstance(case, list) else repeat(case)
+        generics = {k: v for k, v in zip(generic_names, case)}
+        name = ",".join(f"{k}={v}" for k, v in generics.items())
+        tb.add_config(name=name, generics=generics)
 
 
 if __name__ == "__main__":
@@ -35,9 +45,12 @@ if __name__ == "__main__":
 
     # ──────────────────────────────────── Tests ──────────────────────────────────
 
-    generic_test(tests, "BCDDecoder_TB", [1, 4, 7, 8, 20])
-    generic_test(tests, "Display7segment_TB", [1, 2, 3, 8, 20])
-    generic_test(tests, "TriState_TB", [1, 2, 3, 4])
+    generic_test(tests, "BCDDecoder_TB", ["size"], [1, 4, 7, 8, 20])
+    generic_test(tests, "Display7segment_TB", ["size"], [1, 2, 3, 8, 20])
+    generic_test(tests, "TriState_TB", ["size"], [1, 2, 3, 4])
+    generic_test(
+        tests, "Multiplexer_TB", ["size", "addresses"], [[1, 2], [1, 4], [3, 2], [3, 8]]
+    )
 
     # ───────────────────────────────────── Main ─────────────────────────────────────
 
