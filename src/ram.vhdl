@@ -12,20 +12,21 @@ entity RAM is
 end;
 
 architecture behaviour of RAM is
-    type RAMState is array (natural range 0 to addresses - 1) of std_ulogic_vector(data'range);
-    signal contents: RAMState;
+    type State is array (natural range 0 to addresses - 1) of std_ulogic_vector(data'range);
+    signal contents: State;
+    signal raddr: natural range 0 to addresses - 1;
 begin
     process(clk, rst)
     begin
         if rst then
             contents <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            data <= (others => 'Z');
+            raddr <= addr;
             if w then
                 contents(addr) <= data;
-            elsif r then
-                data <= contents(addr);
             end if;
         end if;
     end process;
+    data <= contents(raddr) when not w and r else (others => 'Z');
+
 end;
