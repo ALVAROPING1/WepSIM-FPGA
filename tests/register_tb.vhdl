@@ -35,6 +35,7 @@ begin
         test_runner_setup(runner, runner_cfg);
         rst <= '1';
         wait for 1 us;
+        rst <= '0';
         check_equal(data_out, ZERO, "Check output after reset");
         for i in 0 to 1000 loop
             data_in <= rnd.RandSlv(size);
