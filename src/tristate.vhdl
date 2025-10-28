@@ -7,7 +7,7 @@ entity TriState is
     port(
         data_in: in std_ulogic_vector(size - 1 downto 0);
         data_out: out std_ulogic_vector(size - 1 downto 0);
-        enable: boolean
+        enable: in boolean
     );
 end;
 

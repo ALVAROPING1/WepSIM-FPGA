@@ -16,7 +16,7 @@ entity Multiplexer is
     port(
         data_in: in multiplexer_pkg.data(0 to addresses - 1)(size - 1 downto 0);
         data_out: out std_ulogic_vector(size - 1 downto 0);
-        sel: natural range 0 to addresses - 1
+        sel: in natural range 0 to addresses - 1
     );
 end;
 

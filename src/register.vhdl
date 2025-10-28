@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity Reg is
     generic(size: positive);
     port(
-        clk, rst, w: std_ulogic;
+        clk, rst, w: in std_ulogic;
         data_in: in std_ulogic_vector(size - 1 downto 0);
         data_out: out std_ulogic_vector(size - 1 downto 0)
     );

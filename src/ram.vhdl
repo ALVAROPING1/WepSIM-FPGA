@@ -5,8 +5,8 @@ use ieee.numeric_std.all;
 entity RAM is
     generic(size, addresses: positive);
     port(
-        clk, rst, w, r: std_ulogic;
-        addr: natural range 0 to addresses - 1;
+        clk, rst, w, r: in std_ulogic;
+        addr: in natural range 0 to addresses - 1;
         data: inout std_ulogic_vector(size - 1 downto 0)
     );
 end;
