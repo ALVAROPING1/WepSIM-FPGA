@@ -1,4 +1,5 @@
 from itertools import repeat
+from typing import Sequence
 from vunit import VUnit
 from os import environ
 
@@ -29,7 +30,7 @@ if __name__ == "__main__":
 
     # ──────────────────────────────────── Tests ──────────────────────────────────
 
-    def generic_test(tb_name: str, names: list[str], cases: list[list[int] | int]):
+    def generic_test(tb_name: str, names: list[str], cases: Sequence[list[int] | int]):
         tb = tests.test_bench(tb_name)
         for case in cases:
             case = case if isinstance(case, list) else repeat(case)
@@ -41,9 +42,9 @@ if __name__ == "__main__":
     generic_test("Display7segment_TB", ["size"], [1, 2, 3, 8, 20])
     generic_test("TriState_TB", ["size"], [1, 2, 3, 4])
     generic_test("Reg_TB", ["size"], [1, 2, 4, 8, 16])
-    generic_test(
-        "Multiplexer_TB", ["size", "addresses"], [[1, 2], [1, 4], [3, 2], [3, 8]]
-    )
+    mux_cases = [[1, 2], [1, 4], [3, 2], [3, 8]]
+    generic_test("Multiplexer_TB", ["size", "addresses"], mux_cases)
+    generic_test("Demultiplexer_TB", ["size", "addresses"], mux_cases)
     generic_test(
         "RAM_TB",
         ["size", "addresses"],
