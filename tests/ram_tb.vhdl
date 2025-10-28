@@ -68,6 +68,13 @@ begin
                     check_equal(data, Z, "Check output after no-op");
             end case;
         end loop;
+
+        w <= '0'; r <= '1';
+        for i in 0 to addresses - 1 loop
+            addr <= i;
+            wait for 2 us;
+            check_equal(data, state(i), "Check output in final state");
+        end loop;
         test_runner_cleanup(runner);
     end process;
 end;
