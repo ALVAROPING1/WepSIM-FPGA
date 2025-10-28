@@ -30,7 +30,6 @@ begin
 
     main: process
         variable rnd: RandomPType;
-        variable op: natural;
         constant ZERO: std_ulogic_vector(size - 1 downto 0) := (others => '0');
         constant Z: std_ulogic_vector(size - 1 downto 0) := (others => 'Z');
 
@@ -49,25 +48,25 @@ begin
         end loop;
 
         for i in 0 to maximum(1000, addresses) loop
-            op := rnd.RandInt(0, 2);
-            if op = 0 then -- Write
-                w <= '1'; r <= '0';
-                addr <= rnd.RandInt(0, addresses - 1);
-                data <= rnd.RandSlv(size);
-                wait for 2 us;
-                state(addr) := data;
-                data <= Z;
-            elsif op = 1 then -- Read
-                w <= '0'; r <= '1';
-                addr <= rnd.RandInt(0, addresses - 1);
-                wait for 2 us;
-                check_equal(data, state(addr), "Check output after read");
-            else -- No-op
-                w <= '0'; r <= '0';
-                addr <= rnd.RandInt(0, addresses - 1);
-                wait for 2 us;
-                check_equal(data, Z, "Check output after no-op");
-            end if;
+            case rnd.RandInt(0, 2) is
+                when 0 => -- Write
+                    w <= '1'; r <= '0';
+                    addr <= rnd.RandInt(0, addresses - 1);
+                    data <= rnd.RandSlv(size);
+                    wait for 2 us;
+                    state(addr) := data;
+                    data <= Z;
+                when 1 => -- Read
+                    w <= '0'; r <= '1';
+                    addr <= rnd.RandInt(0, addresses - 1);
+                    wait for 2 us;
+                    check_equal(data, state(addr), "Check output after read");
+                when others => -- No-op
+                    w <= '0'; r <= '0';
+                    addr <= rnd.RandInt(0, addresses - 1);
+                    wait for 2 us;
+                    check_equal(data, Z, "Check output after no-op");
+            end case;
         end loop;
         test_runner_cleanup(runner);
     end process;
