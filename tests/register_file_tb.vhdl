@@ -9,7 +9,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library src;
-use src.register_file;
+use src.utils.std_ulogic_matrix;
+use src.utils.natural_vector;
 
 use work.utils;
 
@@ -23,8 +24,8 @@ end;
 architecture tb of RegisterFile_TB is
     signal w_addr: natural range 0 to addresses - 1;
     signal w_data: std_ulogic_vector(size - 1 downto 0);
-    signal r_addr: register_file.natural_vector(0 to read_outputs - 1);
-    signal r_data: register_file.std_ulogic_matrix(0 to read_outputs - 1)(size - 1 downto 0);
+    signal r_addr: natural_vector(0 to read_outputs - 1);
+    signal r_data: std_ulogic_matrix(0 to read_outputs - 1)(size - 1 downto 0);
     signal clk, rst, w: std_ulogic := '0';
 begin
     dut: entity src.RegisterFile

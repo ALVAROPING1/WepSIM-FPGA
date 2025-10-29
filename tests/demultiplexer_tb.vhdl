@@ -9,7 +9,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 library src;
-use src.multiplexer_pkg;
+use src.utils.std_ulogic_matrix;
 
 entity Demultiplexer_TB is
     generic (
@@ -20,7 +20,7 @@ end;
 
 architecture tb of Demultiplexer_TB is
     signal data_in: std_ulogic_vector(size - 1 downto 0);
-    signal data_out: multiplexer_pkg.data(0 to addresses - 1)(size - 1 downto 0);
+    signal data_out: std_ulogic_matrix(0 to addresses - 1)(size - 1 downto 0);
     signal sel: natural range 0 to addresses - 1;
 begin
     dut: entity src.Demultiplexer generic map(size, addresses) port map(data_in, data_out, sel);

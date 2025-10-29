@@ -1,16 +1,12 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-package register_file is
-    type std_ulogic_matrix is array (natural range <>) of std_ulogic_vector;
-    type natural_vector is array(natural range <>) of natural;
-end package register_file;
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.register_file;
+use work.utils.std_ulogic_matrix;
+use work.utils.natural_vector;
 
 entity RegisterFile is
     generic(size, addresses, read_outputs: positive);
@@ -18,8 +14,8 @@ entity RegisterFile is
         clk, rst, w: in std_ulogic;
         w_addr: in natural range 0 to addresses - 1;
         w_data: in std_ulogic_vector(size - 1 downto 0);
-        r_addr: in register_file.natural_vector(0 to read_outputs - 1);
-        r_data: out register_file.std_ulogic_matrix(0 to read_outputs - 1)(size - 1 downto 0)
+        r_addr: in natural_vector(0 to read_outputs - 1);
+        r_data: out std_ulogic_matrix(0 to read_outputs - 1)(size - 1 downto 0)
     );
 end;
 
