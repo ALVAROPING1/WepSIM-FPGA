@@ -26,7 +26,7 @@ begin
     dut: entity src.Demultiplexer generic map(size, addresses) port map(data_in, data_out, sel);
 
     main: process
-        variable rnd : RandomPType;
+        variable rnd: RandomPType;
         constant Z: std_ulogic_vector(size - 1 downto 0) := (others => 'Z');
     begin
         test_runner_setup(runner, runner_cfg);

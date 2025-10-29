@@ -6,7 +6,7 @@ package utils is
         signal clk: out std_ulogic;
         constant period: time := 2 us
     );
-end package utils;
+end package;
 
 package body utils is
     procedure clk_gen(
@@ -19,4 +19,4 @@ package body utils is
             wait for period;
         end loop;
     end;
-end package body utils;
+end package body;

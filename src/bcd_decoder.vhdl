@@ -10,9 +10,7 @@ use ieee.numeric_std.all;
 use work.bcd.bcd_vector;
 
 entity BCDDecoder is
-    generic(
-        input_size, output_size: positive
-    );
+    generic(input_size, output_size: positive);
     port(
         data_in: in unsigned(input_size - 1 downto 0);
         data_out: out bcd_vector(output_size - 1 downto 0)

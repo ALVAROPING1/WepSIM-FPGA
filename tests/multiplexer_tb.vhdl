@@ -26,7 +26,7 @@ begin
     dut: entity src.Multiplexer generic map(size, addresses) port map(data_in, data_out, sel);
 
     main: process
-        variable rnd : RandomPType;
+        variable rnd: RandomPType;
     begin
         test_runner_setup(runner, runner_cfg);
         for iteration in 0 to 1000 loop

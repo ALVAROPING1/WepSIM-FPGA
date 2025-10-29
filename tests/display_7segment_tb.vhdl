@@ -46,7 +46,7 @@ begin
     utils.clk_gen(clk);
 
     main: process
-        variable rnd : RandomPType;
+        variable rnd: RandomPType;
         variable value: bcd_vector(size - 1 downto 0);
     begin
         test_runner_setup(runner, runner_cfg);

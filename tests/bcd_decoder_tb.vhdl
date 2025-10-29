@@ -27,7 +27,7 @@ begin
         port map(data_in, data_out);
 
     main: process
-        variable rnd : RandomPType;
+        variable rnd: RandomPType;
         variable value: natural;
         variable curr: natural;
     begin
