@@ -20,3 +20,18 @@ package body utils is
         end loop;
     end;
 end package body;
+
+context tb_context is
+    library vunit_lib;
+    context vunit_lib.vunit_context;
+
+    library osvvm;
+    use osvvm.RandomPkg.all;
+
+    library ieee;
+    use ieee.std_logic_1164.all;
+    use ieee.numeric_std.all;
+
+    library src;
+end context;
+

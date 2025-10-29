@@ -1,15 +1,6 @@
-library vunit_lib;
-context vunit_lib.vunit_context;
+context work.tb_context;
 
-library osvvm;
-use osvvm.RandomPkg.all;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
 use ieee.math_real.all;
-
-library src;
 
 entity BCDDecoder_TB is
     generic (

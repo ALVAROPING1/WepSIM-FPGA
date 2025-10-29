@@ -1,14 +1,5 @@
-library vunit_lib;
-context vunit_lib.vunit_context;
+context work.tb_context;
 
-library osvvm;
-use osvvm.RandomPkg.all;
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-library src;
 use src.utils.std_ulogic_matrix;
 
 entity Multiplexer_TB is
