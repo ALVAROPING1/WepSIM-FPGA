@@ -45,6 +45,7 @@ if __name__ == "__main__":
     mux_cases = [[1, 2], [1, 4], [3, 2], [3, 8]]
     generic_test("Multiplexer_TB", ["size", "addresses"], mux_cases)
     generic_test("Demultiplexer_TB", ["size", "addresses"], mux_cases)
+    generic_test("Adder_TB", ["size"], [4, 8, 16, 24, 31]) # vhdl only guarantees up to 32 bit ints, so we can't go higher than that
     generic_test(
         "RAM_TB",
         ["size", "addresses"],
