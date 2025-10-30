@@ -34,7 +34,7 @@ begin
         end if;
     end process;
 
-    read: process(contents, r_addr)
+    read: process(all)
     begin
         for i in r_addr'range loop
             assert r_addr(i) < addresses

@@ -15,7 +15,7 @@ end;
 
 architecture behaviour of Demultiplexer is
 begin
-    process(data_in, sel)
+    process(all)
     begin
         data_out <= (others => (others => 'Z'));
         data_out(sel) <= data_in;
