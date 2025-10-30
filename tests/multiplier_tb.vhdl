@@ -8,7 +8,8 @@ entity Multiplier_TB is
 end;
 
 architecture tb of Multiplier_TB is
-    signal a, b, c: signed(size - 1 downto 0);
+    signal a, b: signed(size - 1 downto 0);
+    signal c: signed(size * 2 - 1 downto 0);
     signal overflow: std_ulogic;
 begin
     dut: entity src.Multiplier generic map(size) port map(a, b, c, overflow);
@@ -25,8 +26,8 @@ begin
             b <= rnd.RandSigned(size);
             wait for 1 ns;
             res := to_integer(a) * to_integer(b);
-            check_equal(c, to_signed(res, size), "Check result of operation");
             res_signed := to_signed(res, size * 2);
+            check_equal(c, res_signed, "Check result of operation");
             sign_bit := (others => res_signed(res_signed'high));
             check_equal(overflow, res_signed(size * 2 - 1 downto size - 1) /= sign_bit, "Check overflow result");
         end loop;
