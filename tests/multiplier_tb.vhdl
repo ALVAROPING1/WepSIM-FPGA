@@ -16,20 +16,16 @@ begin
 
     main: process
         variable rnd: RandomPType;
-        variable res: integer;
-        variable res_signed: signed(size * 2 - 1 downto 0);
-        variable sign_bit: signed(size downto 0);
+        variable res: signed(size * 2 - 1 downto 0);
     begin
         test_runner_setup(runner, runner_cfg);
         for iteration in 0 to 2000 loop
             a <= rnd.RandSigned(size);
             b <= rnd.RandSigned(size);
             wait for 1 ns;
-            res := to_integer(a) * to_integer(b);
-            res_signed := to_signed(res, size * 2);
-            check_equal(c, res_signed, "Check result of operation");
-            sign_bit := (others => res_signed(res_signed'high));
-            check_equal(overflow, res_signed(size * 2 - 1 downto size - 1) /= sign_bit, "Check overflow result");
+            res := to_signed(to_integer(a) * to_integer(b), size * 2);
+            check_equal(c, res, "Check result of operation");
+            check_equal(overflow, resize(res, size) /= res, "Check overflow result");
         end loop;
         test_runner_cleanup(runner);
     end process;
