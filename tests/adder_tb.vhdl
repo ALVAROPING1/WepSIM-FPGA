@@ -40,7 +40,7 @@ begin
             wait for 1 ns;
             check_equal(c, to_signed(res, size), "Check result of operation " & format_op(a, b, op));
             res_signed := to_signed(res, size + 1);
-            check_equal(overflow, res_signed(size) /= res_signed(size - 1),
+            check_equal(overflow, resize(res_signed, size) /= res_signed,
                         "Check overflow result of " & format_op(a, b, op));
         end loop;
         test_runner_cleanup(runner);
