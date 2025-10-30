@@ -15,8 +15,8 @@ end;
 architecture behaviour of Adder is
     signal a_extended, b_extended, c_extended: signed(size downto 0);
 begin
-    a_extended <= a(a'high) & a;
-    b_extended <= b(b'high) & b;
+    a_extended <= resize(a, size + 1);
+    b_extended <= resize(b, size + 1);
     c_extended <= a_extended + b_extended when not subtraction else a_extended - b_extended;
 
     c <= c_extended(size - 1 downto 0);
