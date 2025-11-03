@@ -6,7 +6,7 @@ entity Adder is
     generic(size: positive);
     port(
         a, b: in signed(size - 1 downto 0);
-        c: buffer signed(size - 1 downto 0);
+        c: out signed(size - 1 downto 0);
         subtraction: in std_ulogic;
         overflow: out std_ulogic
     );
