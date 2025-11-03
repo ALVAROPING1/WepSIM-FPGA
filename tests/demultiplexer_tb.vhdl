@@ -5,16 +5,16 @@ use src.utils.std_ulogic_matrix;
 entity Demultiplexer_TB is
     generic (
         runner_cfg: string;
-        size, addresses: positive
+        size, addr_size: positive
     );
 end;
 
 architecture tb of Demultiplexer_TB is
     signal data_in: std_ulogic_vector(size - 1 downto 0);
-    signal data_out: std_ulogic_matrix(0 to addresses - 1)(size - 1 downto 0);
-    signal sel: natural range 0 to addresses - 1;
+    signal data_out: std_ulogic_matrix(0 to 2**addr_size - 1)(size - 1 downto 0);
+    signal sel: unsigned(addr_size - 1 downto 0);
 begin
-    dut: entity src.Demultiplexer generic map(size, addresses) port map(data_in, data_out, sel);
+    dut: entity src.Demultiplexer generic map(size, addr_size) port map(data_in, data_out, sel);
 
     main: process
         variable rnd: RandomPType;
@@ -23,7 +23,7 @@ begin
         test_runner_setup(runner, runner_cfg);
         for iteration in 0 to 1000 loop
             data_in <= rnd.RandSlv(size);
-            sel <= rnd.RandInt(0, addresses - 1);
+            sel <= rnd.RandUnsigned(addr_size);
             wait for 1 ns;
             for i in data_out'range loop
                 if i = sel then

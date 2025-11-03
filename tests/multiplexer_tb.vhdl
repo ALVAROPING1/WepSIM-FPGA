@@ -5,16 +5,16 @@ use src.utils.std_ulogic_matrix;
 entity Multiplexer_TB is
     generic (
         runner_cfg: string;
-        size, addresses: positive
+        size, addr_size: positive
     );
 end;
 
 architecture tb of Multiplexer_TB is
-    signal data_in: std_ulogic_matrix(0 to addresses - 1)(size - 1 downto 0);
+    signal data_in: std_ulogic_matrix(0 to 2**addr_size - 1)(size - 1 downto 0);
     signal data_out: std_ulogic_vector(size - 1 downto 0);
-    signal sel: natural range 0 to addresses - 1;
+    signal sel: unsigned(addr_size - 1 downto 0);
 begin
-    dut: entity src.Multiplexer generic map(size, addresses) port map(data_in, data_out, sel);
+    dut: entity src.Multiplexer generic map(size, addr_size) port map(data_in, data_out, sel);
 
     main: process
         variable rnd: RandomPType;
@@ -24,9 +24,9 @@ begin
             for i in data_in'range loop
                 data_in(i) <= rnd.RandSlv(size);
             end loop;
-            sel <= rnd.RandInt(0, addresses - 1);
+            sel <= rnd.RandUnsigned(addr_size);
             wait for 1 ns;
-            check_equal(data_out, data_in(sel));
+            check_equal(data_out, data_in(to_integer(sel)));
         end loop;
         test_runner_cleanup(runner);
     end process;

@@ -42,18 +42,18 @@ if __name__ == "__main__":
     generic_test("Display7segment_TB", ["size"], [1, 2, 3, 8, 20])
     generic_test("TriState_TB", ["size"], [1, 2, 3, 4])
     generic_test("Reg_TB", ["size"], [1, 2, 4, 8, 16])
-    mux_cases = [[1, 2], [1, 4], [3, 2], [3, 8]]
-    generic_test("Multiplexer_TB", ["size", "addresses"], mux_cases)
-    generic_test("Demultiplexer_TB", ["size", "addresses"], mux_cases)
+    mux_cases = [[1, 1], [1, 2], [3, 1], [3, 3]]
+    generic_test("Multiplexer_TB", ["size", "addr_size"], mux_cases)
+    generic_test("Demultiplexer_TB", ["size", "addr_size"], mux_cases)
     generic_test(
         "RAM_TB",
-        ["size", "addresses"],
-        [[1, 2], [1, 4], [8, 16], [8, 256], [32, 2**14]],
+        ["size", "addr_size"],
+        [[1, 1], [1, 2], [8, 4], [8, 8], [32, 14]],
     )
     generic_test(
         "RegisterFile_TB",
-        ["size", "addresses", "read_outputs"],
-        [[1, 2, 1], [2, 4, 2], [8, 32, 2], [32, 32, 8], [64, 64, 16], [1024, 128, 16]],
+        ["size", "addr_size", "read_outputs"],
+        [[1, 1, 1], [2, 2, 2], [8, 5, 2], [32, 5, 8], [64, 6, 16], [1024, 7, 16]],
     )
     # vhdl only guarantees up to 32 bit ints, so we can't go higher than that
     generic_test("Adder_TB", ["size"], [4, 8, 16, 24, 31])
