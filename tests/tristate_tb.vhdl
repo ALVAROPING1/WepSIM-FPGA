@@ -9,7 +9,7 @@ end;
 
 architecture tb of TriState_TB is
     signal data_in, data_out: std_ulogic_vector(size - 1 downto 0);
-    signal enable: boolean;
+    signal enable: std_ulogic;
 begin
     dut: entity src.Tristate generic map(size) port map(data_in, data_out, enable);
 
@@ -20,10 +20,10 @@ begin
         test_runner_setup(runner, runner_cfg);
         for i in 0 to 1000 loop
             data_in <= rnd.RandSlv(size);
-            enable <= true;
+            enable <= '1';
             wait for 1 ns;
             check_equal(data_out, data_in);
-            enable <= false;
+            enable <= '0';
             wait for 1 ns;
             check_equal(data_out, Z);
         end loop;
