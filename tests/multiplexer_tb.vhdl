@@ -26,6 +26,10 @@ begin
             end loop;
             sel <= rnd.RandUnsigned(addr_size);
             wait for 1 ns;
+            for i in data_in'range loop
+                info("Input[" & to_string(i) & "]: " & to_string(data_in(i)));
+            end loop;
+            info("Selected: " & to_string(to_integer(sel)));
             check_equal(data_out, data_in(to_integer(sel)));
         end loop;
         test_runner_cleanup(runner);

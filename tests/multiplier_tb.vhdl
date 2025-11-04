@@ -24,8 +24,9 @@ begin
             b <= rnd.RandSigned(size);
             wait for 1 ns;
             res := to_signed(to_integer(a) * to_integer(b), size * 2);
-            check_equal(c, res, "Check result of operation");
-            check_equal(overflow, resize(res, size) /= res, "Check overflow result");
+            info("Operation: " & to_string(to_integer(a)) & " * " & to_string(to_integer(b)));
+            check_equal(c, res, "Check result");
+            check_equal(overflow, resize(res, size) /= res, "Check overflow");
         end loop;
         test_runner_cleanup(runner);
     end process;

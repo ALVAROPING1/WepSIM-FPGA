@@ -35,6 +35,7 @@ begin
         for iteration in 0 to 1000 loop
             data <= rnd.RandSlv(size);
             wait for 1 ns;
+            info("Data: " & to_string(data));
             check_equal(res_and,  count(data) = size,    "Check result of AND");
             check_equal(res_or,   count(data) > 0,       "Check result of OR");
             check_equal(res_xor,  count(data) mod 2 = 1, "Check result of XOR");

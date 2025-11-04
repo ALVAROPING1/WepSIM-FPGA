@@ -28,8 +28,9 @@ begin
             curr := value;
             data_in <= to_unsigned(value, size);
             wait for 1 ns;
+            info("Value: " & to_string(value));
             for j in data_out'reverse_range loop
-                check_equal(data_out(j), curr mod 10, "Check digit " & to_string(i) & " of " & to_string(value));
+                check_equal(data_out(j), curr mod 10, "Check digit " & to_string(i));
                 curr := curr / 10;
             end loop;
         end loop;

@@ -18,10 +18,6 @@ begin
         variable res: integer;
         variable res_signed: signed(size downto 0);
         variable op: string(1 to 3);
-        pure function format_op(a, b: signed; op: string) return string is
-        begin
-            return to_string(to_integer(a)) & op & to_string(to_integer(b));
-        end function;
     begin
         test_runner_setup(runner, runner_cfg);
         for iteration in 0 to 2000 loop
@@ -37,11 +33,11 @@ begin
                 subtraction <= '1';
                 op := " - ";
             end if;
+            info("Operation: " & to_string(to_integer(a)) & op & to_string(to_integer(b)));
             wait for 1 ns;
-            check_equal(c, to_signed(res, size), "Check result of operation " & format_op(a, b, op));
+            check_equal(c, to_signed(res, size), "Check result");
             res_signed := to_signed(res, size + 1);
-            check_equal(overflow, resize(res_signed, size) /= res_signed,
-                        "Check overflow result of " & format_op(a, b, op));
+            check_equal(overflow, resize(res_signed, size) /= res_signed, "Check overflow");
         end loop;
         test_runner_cleanup(runner);
     end process;

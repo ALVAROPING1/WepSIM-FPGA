@@ -25,6 +25,8 @@ begin
             data_in <= rnd.RandSlv(size);
             sel <= rnd.RandUnsigned(addr_size);
             wait for 1 ns;
+            info("Input: " & to_string(data_in));
+            info("Selected: " & to_string(to_integer(sel)));
             for i in data_out'range loop
                 if i = sel then
                     check_equal(data_out(i), data_in, "Check selected output " & to_string(i));
