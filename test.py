@@ -46,6 +46,11 @@ if __name__ == "__main__":
     generic_test("Multiplexer_TB", ["size", "addr_size"], mux_cases)
     generic_test("Demultiplexer_TB", ["size", "addr_size"], mux_cases)
     generic_test(
+        "Source_TB",
+        ["size", "value"],
+        [[1, 0], [2, 3], [4, 3], [4, 4], [4, 8], [8, 32], [8, 255]],
+    )
+    generic_test(
         "RAM_TB",
         ["size", "addr_size"],
         [[1, 1], [1, 2], [8, 4], [8, 8], [32, 14]],
