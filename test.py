@@ -23,10 +23,10 @@ if __name__ == "__main__":
     # ────────────────────────────────── Libraries ────────────────────────────────
 
     # Create library 'src' and add all files ending in .vhdl from src to library
-    vu.add_library("src").add_source_files("src/*.vhdl")
+    vu.add_library("src").add_source_files("src/**/*.vhdl")
     # Create library 'tests' and add all files ending in .vhdl from tests to library
     tests = vu.add_library("tests")
-    tests.add_source_files("tests/*.vhdl")
+    tests.add_source_files("tests/**/*.vhdl")
 
     # ──────────────────────────────────── Tests ──────────────────────────────────
 

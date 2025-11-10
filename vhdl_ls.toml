@@ -1,9 +1,9 @@
 [libraries]
 src.files = [
-    "src/*.vhdl",
+    "src/**/*.vhdl",
 ]
 tests.files = [
-    "tests/*.vhdl",
+    "tests/**/*.vhdl",
 ]
 
 vunit_lib.files = [
