@@ -60,8 +60,9 @@ if __name__ == "__main__":
         ["size", "addr_size", "read_outputs"],
         [[1, 1, 1], [2, 2, 2], [8, 5, 2], [32, 5, 8], [64, 6, 16], [1024, 7, 16]],
     )
+    generic_test("Boolean_TB", ["size"], [2, 3, 4, 8, 32, 64, 512])
+    generic_test("BooleanBinary_TB", ["size"], [2, 3, 4, 8, 32, 64, 512])
     # vhdl only guarantees up to 32 bit ints, so we can't go higher than that
-    generic_test("Boolean_TB", ["size"], [2, 3, 4, 8, 32])
     generic_test("Adder_TB", ["size"], [4, 8, 16, 24, 31])
     generic_test("Multiplier_TB", ["size"], [4, 8, 16])
 
