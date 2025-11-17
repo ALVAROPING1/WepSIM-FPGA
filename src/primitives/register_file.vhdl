@@ -6,7 +6,7 @@ use work.utils.std_ulogic_matrix;
 use work.utils.unsigned_vector;
 
 entity RegisterFile is
-    generic(size, addr_size, read_outputs: positive);
+    generic(size, addr_size, read_outputs: positive; clk_edge: std_ulogic := '1');
     port(
         clk, rst, w: in std_ulogic;
         w_addr: in unsigned(addr_size - 1 downto 0);
@@ -24,7 +24,7 @@ begin
     begin
         if rst then
             contents <= (others => (others => '0'));
-        elsif rising_edge(clk) then
+        elsif clk'event and clk = clk_edge then
             if w then
                 contents(to_integer(w_addr)) <= w_data;
             end if;

@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity Reg is
-    generic(size: positive);
+    generic(size: positive; clk_edge: std_ulogic := '1');
     port(
         clk, rst, w: in std_ulogic;
         data_in: in std_ulogic_vector(size - 1 downto 0);
@@ -17,7 +17,7 @@ begin
     begin
         if rst then
             data_out <= (others => '0');
-        elsif rising_edge(clk) then
+        elsif clk'event and clk = clk_edge then
             if w then
                 data_out <= data_in;
             end if;

@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity RAM is
-    generic(size, addr_size: positive);
+    generic(size, addr_size: positive; clk_edge: std_ulogic := '1');
     port(
         clk, rst, w, r: in std_ulogic;
         addr: in unsigned(addr_size - 1 downto 0);
@@ -20,7 +20,7 @@ begin
     begin
         if rst then
             contents <= (others => (others => '0'));
-        elsif rising_edge(clk) then
+        elsif clk'event and clk = clk_edge then
             raddr <= to_integer(addr);
             if w then
                 contents(to_integer(addr)) <= data;
