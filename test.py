@@ -1,6 +1,6 @@
 from itertools import repeat
 from typing import Sequence
-from vunit import VUnit
+from vunit.ui import VUnit
 from os import environ
 
 
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # ──────────────────────────────────── Setup ──────────────────────────────────
 
     # Create VUnit instance by parsing command line arguments
-    vu = VUnit.from_argv(compile_builtins=False)
+    vu = VUnit.from_argv()
     # Add VUnit's builtin HDL utilities. SEE: http://vunit.github.io/hdl_libraries.html.
     vu.add_vhdl_builtins()
     vu.add_osvvm()
