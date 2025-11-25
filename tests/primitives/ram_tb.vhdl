@@ -12,9 +12,9 @@ end;
 architecture tb of RAM_TB is
     signal addr: unsigned(addr_size - 1 downto 0);
     signal data: std_logic_vector(size - 1 downto 0) := (others => 'Z');
-    signal clk, rst, w, r: std_ulogic := '0';
+    signal clk, w, r: std_ulogic := '0';
 begin
-    dut: entity src.RAM generic map(size, addr_size) port map(clk, rst, w, r, addr, data);
+    dut: entity src.RAM generic map(size, addr_size) port map(clk, w, r, addr, data);
 
     utils.clk_gen(clk);
 
@@ -28,14 +28,12 @@ begin
         variable state: RAMState := (others => (others => '0'));
     begin
         test_runner_setup(runner, runner_cfg);
-        rst <= '1';
         wait for 1 us;
-        rst <= '0';
         r <= '1';
         for i in 0 to ADDRESSES - 1 loop
             addr <= to_unsigned(i, addr_size);
             wait for 2 us;
-            check_equal(data, ZERO, "Check output after reset");
+            check_equal(data, ZERO, "Check output initialization");
         end loop;
 
         for i in 0 to maximum(1000, ADDRESSES) loop
