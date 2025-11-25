@@ -17,11 +17,11 @@ architecture tb of RegisterFile_TB is
     signal w_data: std_ulogic_vector(size - 1 downto 0);
     signal r_addr: unsigned_vector(0 to read_outputs - 1)(addr_size - 1 downto 0);
     signal r_data: std_ulogic_matrix(0 to read_outputs - 1)(size - 1 downto 0);
-    signal clk, rst, w: std_ulogic := '0';
+    signal clk, w: std_ulogic := '0';
 begin
     dut: entity src.RegisterFile
         generic map(size, addr_size, read_outputs)
-        port map(clk, rst, w, w_addr, w_data, r_addr, r_data);
+        port map(clk, w, w_addr, w_data, r_addr, r_data);
 
     utils.clk_gen(clk);
 
@@ -34,18 +34,15 @@ begin
         variable state: RAMState := (others => (others => '0'));
     begin
         test_runner_setup(runner, runner_cfg);
-        rst <= '1';
         wait for 1 us;
-        rst <= '0';
         for i in 0 to addresses - 1 loop
             r_addr(0) <= to_unsigned(i, addr_size);
             wait for 0.5 us;
-            check_equal(r_data(0), ZERO, "Check output after reset");
+            check_equal(r_data(0), ZERO, "Check output initialization");
             wait for 1.5 us;
         end loop;
 
         for i in 0 to maximum(1000, addresses) loop
-            rst <= '1' when rnd.RandInt(0, 20) = 0 else '0';
             w <= '1' when rnd.RandBool else '0';
             w_addr <= rnd.RandUnsigned(addr_size);
             w_data <= rnd.RandSlv(size);
@@ -54,9 +51,6 @@ begin
                 r_addr(r_port) <= rnd.RandUnsigned(addr_size);
             end loop;
             wait for 0.5 us;
-            if rst then
-                state := (others => (others => '0'));
-            end if;
 
             for r_port in r_addr'range loop
                 check_equal(
@@ -66,10 +60,9 @@ begin
             end loop;
 
             wait for 1.5 us;
-            if not rst and w then
+            if w then
                 state(to_integer(w_addr)) := w_data;
             end if;
-            rst <= '0';
         end loop;
 
         w <= '0';

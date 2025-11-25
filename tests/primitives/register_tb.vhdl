@@ -11,9 +11,9 @@ end;
 
 architecture tb of Reg_TB is
     signal data_in, data_out: std_ulogic_vector(size - 1 downto 0);
-    signal clk, rst, w: std_ulogic;
+    signal clk, w: std_ulogic;
 begin
-    dut: entity src.Reg generic map(size) port map(clk, rst, w, data_in, data_out);
+    dut: entity src.Reg generic map(size) port map(clk, w, data_in, data_out);
 
     utils.clk_gen(clk);
 
@@ -23,19 +23,13 @@ begin
         constant ZERO: std_ulogic_vector(size - 1 downto 0) := (others => '0');
     begin
         test_runner_setup(runner, runner_cfg);
-        rst <= '1';
         wait for 1 us;
-        rst <= '0';
-        check_equal(data_out, ZERO, "Check output after reset");
+        check_equal(data_out, ZERO, "Check output initialization");
         for i in 0 to 1000 loop
             data_in <= rnd.RandSlv(size);
-            rst <= '1' when rnd.RandInt(0, 20) = 0 else '0';
             w <= '1' when rnd.RandInt(0, 3) = 0 else '0';
             wait for 2 us;
-            if rst then
-                check_equal(data_out, ZERO, "Check output after reset");
-                prev := ZERO;
-            elsif w then
+            if w then
                 check_equal(data_out, data_in, "Check output after write");
                 prev := data_in;
             else
