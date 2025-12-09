@@ -13,12 +13,10 @@ if __name__ == "__main__":
     # ──────────────────────────────────── Setup ──────────────────────────────────
 
     # Create VUnit instance by parsing command line arguments
-    vu = VUnit.from_argv()
+    vu = VUnit.from_argv(vhdl_standard="2019")
     # Add VUnit's builtin HDL utilities. SEE: http://vunit.github.io/hdl_libraries.html.
     vu.add_vhdl_builtins()
     vu.add_osvvm()
-    vu.enable_check_preprocessing()
-    vu.enable_location_preprocessing()
 
     # ────────────────────────────────── Libraries ────────────────────────────────
 

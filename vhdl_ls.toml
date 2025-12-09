@@ -1,10 +1,9 @@
+standard = "2019"
+preferred_case = "lower"
+
 [libraries]
-src.files = [
-    "src/**/*.vhdl",
-]
-tests.files = [
-    "tests/**/*.vhdl",
-]
+src.files = ["src/**/*.vhdl"]
+tests.files = ["tests/**/*.vhdl"]
 
 vunit_lib.files = [
     ".venv/lib/*/*/vunit/vhdl/*.vhd",
@@ -12,7 +11,5 @@ vunit_lib.files = [
 ]
 vunit_lib.is_third_party = true
 
-osvvm.files = [
-    ".venv/lib/*/*/vunit/vhdl/osvvm/*.vhd",
-]
+osvvm.files = [".venv/lib/*/*/vunit/vhdl/osvvm/*.vhd"]
 osvvm.is_third_party = true
