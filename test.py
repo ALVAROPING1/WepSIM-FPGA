@@ -60,6 +60,11 @@ if __name__ == "__main__":
     )
     generic_test("Boolean_TB", ["size"], [2, 3, 4, 8, 32, 64, 512])
     generic_test("BooleanBinary_TB", ["size"], [2, 3, 4, 8, 32, 64, 512])
+    generic_test(
+        "Slicer_TB",
+        ["offset_size", "out_size"],
+        [[1, 1], [2, 1], [4, 1], [4, 8], [5, 5]],
+    )
     # vhdl only guarantees up to 32 bit ints, so we can't go higher than that
     generic_test("Adder_TB", ["size"], [4, 8, 16, 24, 31])
     generic_test("Multiplier_TB", ["size"], [4, 8, 16])
