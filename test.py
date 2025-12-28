@@ -51,7 +51,7 @@ if __name__ == "__main__":
     generic_test(
         "RAM_TB",
         ["size", "addr_size"],
-        [[1, 1], [1, 2], [8, 4], [8, 8], [32, 14]],
+        [[4, 3], [4, 5], [8, 3], [16, 6], [16, 10], [32, 16]],
     )
     generic_test(
         "RegisterFile_TB",
