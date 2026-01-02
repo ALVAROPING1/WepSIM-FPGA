@@ -14,6 +14,8 @@ architecture tb of RAM_TB is
     signal data: std_logic_vector(size - 1 downto 0) := (others => 'Z');
     signal clk, w, r, se: std_ulogic := '0';
     signal bw: std_ulogic_vector(1 downto 0) := "11";
+    constant ADDRESSES: positive := 2**(addr_size - 2);
+    signal state: std_ulogic_vector(ADDRESSES * size - 1 downto 0) := (others => '0');
 begin
     dut: entity src.RAM generic map(size, addr_size) port map(clk, w, r, se, bw, addr, data);
 
@@ -23,15 +25,14 @@ begin
         variable rnd: RandomPType;
         constant ZERO: std_ulogic_vector(size - 1 downto 0) := (others => '0');
         constant Z: std_ulogic_vector(size - 1 downto 0) := (others => 'Z');
-        constant ADDRESSES: positive := 2**(addr_size - 2);
 
-        variable state: std_ulogic_vector(ADDRESSES * size - 1 downto 0) := (others => '0');
         variable bits, word_addr, offset, high: natural;
         variable v_bw: std_ulogic_vector(bw'range);
         variable v_addr: unsigned(addr'range);
     begin
         test_runner_setup(runner, runner_cfg);
-        wait for 1 us;
+        set_format(display_handler, use_color => true, log_time_unit => auto_time_unit);
+        wait for 0.5 us;
         r <= '1';
         for i in 0 to ADDRESSES - 1 loop
             addr <= to_unsigned(i, addr_size);
@@ -59,8 +60,11 @@ begin
                     w <= '1'; r <= '0';
                     data <= rnd.RandSlv(size);
                     wait for 2 us;
-                    state(high downto word_addr) := data(bits - 1 downto 0);
+                    state(high downto word_addr) <= data(bits - 1 downto 0);
                     data <= Z;
+                    addr <= (others => 'Z');
+                    w <= '0'; bw <= "11";
+                    wait for 2 us;
                 when 1 => -- Read
                     w <= '0'; r <= '1';
                     wait for 2 us;
