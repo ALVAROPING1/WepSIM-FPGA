@@ -8,7 +8,7 @@ use work.bcd.digit;
 entity Display7segment is
     generic(size: positive);
     port(
-        clk, rst: in std_ulogic;
+        clk: in std_ulogic;
         data_in: in bcd_vector(size - 1 downto 0);
         segment: out std_ulogic_vector(7 downto 0);
         enable: out natural range 0 to size - 1
@@ -31,11 +31,9 @@ architecture behaviour of Display7segment is
         "01101111"
     );
 begin
-    process(clk, rst)
+    process(clk)
     begin
-        if rst then
-            idx <= 0;
-        elsif rising_edge(clk) then
+        if rising_edge(clk) then
             idx <= (idx + 1) mod size;
         end if;
     end process;

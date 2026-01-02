@@ -12,7 +12,7 @@ entity Display7segment_TB is
 end entity;
 
 architecture tb of Display7segment_TB is
-    signal clk, rst: std_ulogic;
+    signal clk: std_ulogic;
     signal data_in: bcd_vector(size - 1 downto 0);
     signal segment: std_ulogic_vector(7 downto 0);
     signal enable: natural;
@@ -31,7 +31,7 @@ architecture tb of Display7segment_TB is
     );
 begin
     dut: entity src.Display7segment generic map (size) port map(
-        clk, rst, data_in, segment, enable
+        clk, data_in, segment, enable
     );
 
     utils.clk_gen(clk);
@@ -41,7 +41,6 @@ begin
         variable value: bcd_vector(size - 1 downto 0);
     begin
         test_runner_setup(runner, runner_cfg);
-        rst <= '1', '0' after 1 us;
         for i in 0 to 3 loop
             for j in value'range loop
                 value(j) := rnd.RandInt(0, 9);
