@@ -16,8 +16,9 @@ architecture tb of RAM_TB is
     signal bw: std_ulogic_vector(1 downto 0) := "11";
     constant ADDRESSES: positive := 2**(addr_size - 2);
     signal state: std_ulogic_vector(ADDRESSES * size - 1 downto 0) := (others => '0');
+    package types is new src.ram_generics generic map (size, addr_size);
 begin
-    dut: entity src.RAM generic map(size, addr_size) port map(clk, w, r, se, bw, addr, data);
+    dut: entity src.RAM generic map(types) port map(clk, w, r, se, bw, addr, data);
 
     utils.clk_gen(clk);
 
