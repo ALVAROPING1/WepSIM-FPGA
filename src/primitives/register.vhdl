@@ -3,11 +3,15 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity Reg is
-    generic(size: positive; clk_edge: std_ulogic := '1');
+    generic(
+        size: positive;
+        clk_edge: std_ulogic := '1';
+        initial: std_ulogic_vector(size - 1 downto 0) := (others => '0')
+    );
     port(
         clk, w: in std_ulogic;
         data_in: in std_ulogic_vector(size - 1 downto 0);
-        data_out: out std_ulogic_vector(size - 1 downto 0) := (others => '0')
+        data_out: out std_ulogic_vector(size - 1 downto 0) := initial
     );
 end;
 
