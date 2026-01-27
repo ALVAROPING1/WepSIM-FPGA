@@ -69,6 +69,8 @@ if __name__ == "__main__":
     generic_test("Adder_TB", ["size"], [4, 8, 16, 24, 31])
     generic_test("Multiplier_TB", ["size"], [4, 8, 16])
 
+    generic_test("Timer_TB", ["size"], [4, 8, 16])
+
     # ───────────────────────────────────── Main ─────────────────────────────────────
 
     vu.set_sim_option("nvc.sim_flags", ["--dump-arrays"])  # pyright: ignore
