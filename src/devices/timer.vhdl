@@ -16,13 +16,12 @@ end;
 
 architecture behaviour of Timer is
     signal id, length: std_ulogic_vector(data'range) := (others => '0');
-    signal update_id, update_length, pending: std_ulogic := '0';
+    signal update_length, pending: std_ulogic := '0';
     signal counter: unsigned(data'range) := (others => '0');
 begin
-    id_reg:     entity work.Reg generic map (size) port map (clk, update_id, data, id);
+    id_reg:     entity work.MemoryMappedReg generic map (size, x"1104") port map (clk, iow, addr, data, id);
     length_reg: entity work.Reg generic map (size) port map (clk, update_length, data, length);
 
-    update_id <=     '1' when iow = '1' and addr = x"1104" else '0';
     update_length <= '1' when iow = '1' and addr = x"1108" else '0';
 
     process(clk)
