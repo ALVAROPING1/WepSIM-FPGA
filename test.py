@@ -37,7 +37,7 @@ if __name__ == "__main__":
             tb.add_config(name=name, generics=generics)
 
     generic_test("BCDDecoder_TB", ["size"], [1, 4, 7, 8, 20])
-    generic_test("Display7segment_TB", ["size"], [1, 2, 3, 8, 20])
+    generic_test("SegmentDisplayController_TB", ["digits"], [1, 2, 3, 8, 20])
     generic_test("TriState_TB", ["size"], [1, 2, 3, 4])
     generic_test("Reg_TB", ["size"], [1, 2, 4, 8, 16])
     mux_cases = [[1, 1], [1, 2], [3, 1], [3, 3]]
