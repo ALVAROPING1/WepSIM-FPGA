@@ -12,11 +12,11 @@ end entity;
 architecture tb of Timer_TB is
     signal clk, iow, inta, int: std_ulogic := '0';
     signal addr: unsigned(15 downto 0);
-    signal data, intv: std_ulogic_vector(size - 1 downto 0);
+    signal data, intv: std_logic_vector(size - 1 downto 0);
 begin
     dut: entity src.Timer
         generic map (size)
-        port map(clk, iow, addr, data, inta, int, intv);
+        port map(clk, iow, '0', addr, data, inta, int, intv);
 
     utils.clk_gen(clk);
 
