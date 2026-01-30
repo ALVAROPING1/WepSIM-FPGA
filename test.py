@@ -1,8 +1,9 @@
 from itertools import repeat
-from typing import Sequence
+from typing import Sequence, TypeAlias
 from vunit.ui import VUnit
 from os import environ
 
+V: TypeAlias = int | str
 
 if __name__ == "__main__":
     # Set VUnit simulator to NVC via env var (needed if GHDL is also installed)
@@ -28,7 +29,7 @@ if __name__ == "__main__":
 
     # ──────────────────────────────────── Tests ──────────────────────────────────
 
-    def generic_test(tb_name: str, names: list[str], cases: Sequence[list[int] | int]):
+    def generic_test(tb_name: str, names: list[str], cases: Sequence[Sequence[V] | V]):
         tb = tests.test_bench(tb_name)
         for case in cases:
             case = case if isinstance(case, list) else repeat(case)
@@ -65,6 +66,7 @@ if __name__ == "__main__":
         ["offset_size", "out_size"],
         [[1, 1], [2, 1], [4, 1], [4, 8], [5, 5]],
     )
+    generic_test("EdgeDetector_TB", ["edge"], ["'1'", "'0'"])
     # vhdl only guarantees up to 32 bit ints, so we can't go higher than that
     generic_test("Adder_TB", ["size"], [4, 8, 16, 24, 31])
     generic_test("Multiplier_TB", ["size"], [4, 8, 16])
