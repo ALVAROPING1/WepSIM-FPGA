@@ -45,7 +45,6 @@ begin
     main: process
         variable rnd: RandomPType;
         variable value: std_ulogic_vector(data_in'range);
-        variable repeats: positive;
         variable pattern: std_ulogic_vector(7 downto 0);
     begin
         test_runner_setup(runner, runner_cfg);
@@ -55,8 +54,7 @@ begin
             end loop;
             data_in <= value;
             display_hex <= '1' when rnd.RandBool else '0';
-            repeats := rnd.RandInt(1, 20);
-            for r in 1 to repeats loop
+            for r in 1 to rnd.RandInt(1, 20) loop
                 for j in 0 to digits - 1 loop
                     wait for 1 us;
                     check_equal(enable, j, "Check enabled digit");

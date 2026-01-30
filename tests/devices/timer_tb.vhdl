@@ -22,14 +22,13 @@ begin
 
     main: process
         variable rnd: RandomPType;
-        variable length, repeats, id, delay: natural;
+        variable length, id: natural;
         constant Z: std_ulogic_vector(intv'range) := (others => 'Z');
     begin
         test_runner_setup(runner, runner_cfg);
         wait for 1 us;
         for i in 1 to 200 loop
             length := rnd.RandInt(1, minimum(500, 2**size - 1));
-            repeats := rnd.RandInt(1, 10);
             id := rnd.RandInt(0, minimum(31, 2**size - 1));
             iow <= '1';
             -- Update id
@@ -43,7 +42,7 @@ begin
             iow <= '0';
             addr <= (others => 'Z');
             data <= (others => 'Z');
-            for j in 1 to repeats loop
+            for j in 1 to rnd.RandInt(1, 10) loop
                 for l in 1 to length loop
                     check_equal(int, '0', "Check timer hasn't triggered yet (flag)");
                     check_equal(intv, Z, "Check timer hasn't triggered yet (id)");
@@ -54,8 +53,7 @@ begin
                 check_equal(intv, Z, "Check timer id is waiting");
                 wait for 2 us;
 
-                delay := rnd.RandInt(0, 5);
-                for d in 1 to delay loop
+                for d in 1 to rnd.RandInt(0, 5) loop
                     check_equal(int, '1', "Check timer has triggered (flag)");
                     check_equal(intv, Z, "Check timer id is waiting");
                     wait for 2 us;
