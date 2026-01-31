@@ -18,7 +18,6 @@ architecture behaviour of SegmentDisplay is
     signal data_low, data_high: std_ulogic_vector(data'range) := (others => '0');
     signal curr_segment: std_ulogic_vector(7 downto 0);
     signal idx: natural range 0 to size - 1;
-    signal acc: unsigned(12 downto 0);
 begin
     mode_reg: entity work.MemoryMappedReg generic map (1, x"5100")    port map (clk, iow, ior, addr, data(0) => data(0), data_out(0) => display_hex);
     low_reg:  entity work.MemoryMappedReg generic map (size, x"5104") port map (clk, iow, ior, addr, data, data_low);
@@ -28,11 +27,4 @@ begin
 
     enable <= not ("00000001" sll idx);
     segment <= not curr_segment;
-
-    process(clk)
-    begin
-        if rising_edge(clk) then
-            acc <= acc + 1;
-        end if;
-    end process;
 end;

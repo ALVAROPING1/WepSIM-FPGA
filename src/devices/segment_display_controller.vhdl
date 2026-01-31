@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity SegmentDisplayController is
-    generic(digits: positive);
+    generic(digits: positive; clk_subsample_bits: positive := 14);
     port(
         clk, display_hex: in std_ulogic;
         data_in: in std_ulogic_vector(digits * 8 - 1 downto 0);
@@ -13,6 +13,8 @@ entity SegmentDisplayController is
 end;
 
 architecture behaviour of SegmentDisplayController is
+    signal acc: unsigned(clk_subsample_bits - 1 downto 0) := (others => '0');
+
     type digit_table is array (natural range 0 to 15) of std_ulogic_vector(7 downto 0);
     constant tbl: digit_table := (
         "00111111",
@@ -34,9 +36,14 @@ architecture behaviour of SegmentDisplayController is
     );
 begin
     process(clk)
+        variable n_acc: unsigned(acc'range);
     begin
         if rising_edge(clk) then
-            enable <= (enable + 1) mod digits;
+            n_acc := acc + 1;
+            if acc(acc'high) /= n_acc(acc'high) then
+                enable <= (enable + 1) mod digits;
+            end if;
+            acc <= n_acc;
         end if;
     end process;
 

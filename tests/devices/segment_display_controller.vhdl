@@ -36,7 +36,7 @@ architecture tb of SegmentDisplayController_TB is
         "01110001"
     );
 begin
-    dut: entity src.SegmentDisplayController generic map (digits) port map(
+    dut: entity src.SegmentDisplayController generic map (digits, 1) port map(
         clk, display_hex, data_in, segment, enable
     );
 
