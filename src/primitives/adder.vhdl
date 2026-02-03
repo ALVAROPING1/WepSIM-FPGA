@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity Adder is
     generic(size: positive);
     port(
-        a, b: in signed(size - 1 downto 0);
+        a, b: in std_ulogic_vector(size - 1 downto 0);
         c: out signed(size - 1 downto 0);
         subtraction: in std_ulogic;
         signed_arith: in std_ulogic;
@@ -16,10 +16,8 @@ end;
 architecture behaviour of Adder is
     signal a_extended, b_extended, c_extended: signed(size downto 0);
 begin
-    a_extended(a'range) <= a;
-    b_extended(b'range) <= b;
-    a_extended(size) <= a(a'high) when signed_arith else '0';
-    b_extended(size) <= b(b'high) when signed_arith else '0';
+    a_extended <= work.utils.maybe_signed(a, signed_arith);
+    b_extended <= work.utils.maybe_signed(b, signed_arith);
     c_extended <= a_extended + b_extended when not subtraction else a_extended - b_extended;
 
     c <= c_extended(c'range);

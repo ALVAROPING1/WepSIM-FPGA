@@ -11,7 +11,7 @@ architecture tb of Adder_TB is
     signal a, b, c: signed(size - 1 downto 0);
     signal overflow, carry, subtraction, signed_arith: std_ulogic;
 begin
-    dut: entity src.Adder generic map(size) port map(a, b, c, subtraction, signed_arith, overflow, carry);
+    dut: entity src.Adder generic map(size) port map(std_ulogic_vector(a), std_ulogic_vector(b), c, subtraction, signed_arith, overflow, carry);
 
     main: process
         variable rnd: RandomPType;
