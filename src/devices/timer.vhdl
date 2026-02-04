@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 entity Timer is
     generic(size: positive);
     port(
-        clk, iow, ior: in std_ulogic;
+        clk, iow, ior, run: in std_ulogic;
         addr: in unsigned(15 downto 0);
         data: inout std_logic_vector(size - 1 downto 0);
         inta: in std_ulogic;
@@ -24,7 +24,7 @@ begin
 
     process(clk)
     begin
-        if rising_edge(clk) then
+        if rising_edge(clk) and run = '1' then
             if iow = '1' and addr = x"1108" then
                 pending <= '0';
                 counter <= (others => '0');

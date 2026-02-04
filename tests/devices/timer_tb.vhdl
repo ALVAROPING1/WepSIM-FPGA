@@ -16,7 +16,7 @@ architecture tb of Timer_TB is
 begin
     dut: entity src.Timer
         generic map (size)
-        port map(clk, iow, '0', addr, data, inta, int, intv);
+        port map(clk, iow, '0', '1', addr, data, inta, int, intv);
 
     utils.clk_gen(clk);
 
