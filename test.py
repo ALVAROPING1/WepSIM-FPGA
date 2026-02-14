@@ -41,9 +41,9 @@ if __name__ == "__main__":
     generic_test("SegmentDisplayController_TB", ["digits"], [1, 2, 3, 8, 20])
     generic_test("TriState_TB", ["size"], [1, 2, 3, 4])
     generic_test("Reg_TB", ["size"], [1, 2, 4, 8, 16])
-    mux_cases = [[1, 1], [1, 2], [3, 1], [3, 3]]
-    generic_test("Multiplexer_TB", ["size", "addr_size"], mux_cases)
-    generic_test("Demultiplexer_TB", ["size", "addr_size"], mux_cases)
+    mux_cases = (["size", "addr_size"], [[1, 1], [1, 2], [3, 1], [3, 3]])
+    generic_test("Multiplexer_TB", *mux_cases)
+    generic_test("Demultiplexer_TB", *mux_cases)
     generic_test(
         "Source_TB",
         ["size", "value"],
@@ -73,6 +73,7 @@ if __name__ == "__main__":
 
     generic_test("MemoryMappedReg_TB", ["size"], [1, 2, 4, 8, 16, 32])
     generic_test("Timer_TB", ["size"], [4, 8, 16])
+    generic_test("ClkDivider_TB", ["in_freq", "out_freq"], [[1, 1], [2, 2], [2, 1], [3, 2], [15, 10], [150, 15], [5000000, 115200 * 16], [15000000, 115200 * 16]])
 
     # ───────────────────────────────────── Main ─────────────────────────────────────
 
