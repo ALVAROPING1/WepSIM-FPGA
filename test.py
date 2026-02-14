@@ -74,6 +74,7 @@ if __name__ == "__main__":
     generic_test("MemoryMappedReg_TB", ["size"], [1, 2, 4, 8, 16, 32])
     generic_test("Timer_TB", ["size"], [4, 8, 16])
     generic_test("ClkDivider_TB", ["in_freq", "out_freq"], [[1, 1], [2, 2], [2, 1], [3, 2], [15, 10], [150, 15], [5000000, 115200 * 16], [15000000, 115200 * 16]])
+    generic_test("FIFO_TB", ["size", "capacity"], [[1, 1], [2, 2], [4, 4], [8, 8], [32, 128]])
 
     # ───────────────────────────────────── Main ─────────────────────────────────────
 
