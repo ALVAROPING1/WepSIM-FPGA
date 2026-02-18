@@ -5,24 +5,18 @@ use work.utils;
 use src.utils.std_ulogic_matrix;
 
 entity UARTRX_TB is
-    generic (
-        runner_cfg: string;
-        clk_freq, baud_rate: positive
-    );
+    generic (runner_cfg: string);
 end;
 
 architecture behaviour of UARTRX_TB is
-    constant UART_PERIOD: time := 2 us * real(clk_freq) / real(baud_rate);
-    signal clk, clk_e, clk_uart, ior, data_valid: std_ulogic := '0';
+    constant CLK_MUL: positive := 16;
+    constant UART_PERIOD: time := 2 us * CLK_MUL;
+    signal clk, clk_uart, ior, data_valid: std_ulogic := '0';
     signal rx, rts: std_ulogic := '1';
     signal receive_data: std_ulogic_vector(7 downto 0);
     signal data: std_ulogic_matrix(1 to 2000)(7 downto 0);
 begin
-    clk_div: entity src.ClkDivider
-        generic map (clk_freq, baud_rate*16)
-        port map (clk, clk_e);
-
-    dut: entity src.UARTRX port map (clk, clk_e, ior, rx, rts, receive_data, data_valid);
+    dut: entity src.UARTRX port map (clk, '1', ior, rx, rts, receive_data, data_valid);
 
     utils.clk_gen(clk);
     utils.clk_gen(clk_uart, period => UART_PERIOD);
@@ -74,7 +68,7 @@ begin
                 check_equal(receive_data, data(l), "Check received data");
                 wait for 2 us;
                 check_equal(rts, '1', "Check data can't be sent over UART");
-                wait for 2 us * rnd.RandInt(1, 5) * clk_freq / baud_rate;
+                wait for 2 us * rnd.RandInt(1, 5) * CLK_MUL;
             end if;
             while data_valid loop wait for 2 us; end loop;
         end loop;

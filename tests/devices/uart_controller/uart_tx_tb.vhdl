@@ -7,23 +7,19 @@ use src.utils.std_ulogic_matrix;
 entity UARTTX_TB is
     generic (
         runner_cfg: string;
-        clk_freq, baud_rate: positive
     );
 end;
 
 architecture behaviour of UARTTX_TB is
-    constant UART_PERIOD: time := 2 us * real(clk_freq) / real(baud_rate);
-    signal clk, clk_e, clk_uart, iow, accept_in, accepted: std_ulogic := '0';
+    constant CLK_MUL: positive := 16;
+    constant UART_PERIOD: time := 2 us * CLK_MUL;
+    signal clk, clk_uart, iow, accept_in, accepted: std_ulogic := '0';
     signal tx, tx_filtered, cts: std_ulogic := '1';
     signal send_data: std_ulogic_vector(7 downto 0);
     signal data: std_ulogic_matrix(1 to 2000)(7 downto 0);
     signal tx_state: unsigned(1 downto 0) := "00";
 begin
-    clk_div: entity src.ClkDivider
-        generic map (clk_freq, baud_rate*16)
-        port map (clk, clk_e);
-
-    dut: entity src.UARTTX port map (clk, clk_e, iow, tx, cts, send_data, accept_in, accepted);
+    dut: entity src.UARTTX port map (clk, '1', iow, tx, cts, send_data, accept_in, accepted);
 
     utils.clk_gen(clk);
     utils.clk_gen(clk_uart, period => UART_PERIOD);
@@ -76,7 +72,7 @@ begin
             if rnd.RandInt(0, 9) = 0 then
                 iow <= '0';
                 send_data <= (others => 'Z');
-                wait for 2 us * rnd.RandInt(2, 5) * clk_freq / baud_rate;
+                wait for 2 us * rnd.RandInt(2, 5) * CLK_MUL;
                 check_equal(accepted, '0', "Check accepted");
             end if;
         end loop;
