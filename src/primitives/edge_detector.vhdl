@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity EdgeDetector is
-    generic(edge: std_ulogic);
+    generic(edge: std_ulogic := '1');
     port(
         clk, data_in: in std_ulogic;
         data_out: out std_ulogic
