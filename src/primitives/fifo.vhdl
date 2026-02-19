@@ -5,7 +5,8 @@ use ieee.numeric_std.all;
 entity FIFO is
     generic(
         size, capacity: positive;
-        almost_full_level, almost_empty_level: natural range 0 to capacity;
+        almost_full_level: natural range 0 to capacity := capacity;
+        almost_empty_level: natural range 0 to capacity := 0;
     );
     port(
         -- Control signals
