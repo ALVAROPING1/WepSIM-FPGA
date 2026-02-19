@@ -68,7 +68,12 @@ begin
             send_data <= curr;
             check_equal(accepted, '0', "Check accepted");
             check_equal(accept_in, '1', "Check accepted");
+            while accept_in loop wait for 2 us; end loop;
+            check_equal(accepted, '0', "Check accepted");
+            check_equal(accept_in, '0', "Check accepted");
             while not accepted loop wait for 2 us; end loop;
+            check_equal(accepted, '1', "Check accepted");
+            check_equal(accept_in, '0', "Check accepted");
             if rnd.RandInt(0, 9) = 0 then
                 iow <= '0';
                 send_data <= (others => 'Z');
