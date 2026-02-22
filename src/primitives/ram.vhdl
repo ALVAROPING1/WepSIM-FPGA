@@ -6,7 +6,7 @@ package ram_generics is
     generic (size, addr_size: positive);
     subtype Address is natural range 0 to 2**(addr_size-2) - 1;
     subtype word is std_ulogic_vector(size - 1 downto 0);
-    type State is array (Address) of word;
+    type Contents is array (Address) of word;
 end package ram_generics;
 
 library ieee;
@@ -17,7 +17,7 @@ entity RAM is
     generic(
         package types is new work.ram_generics generic map (<>);
         clk_edge: std_ulogic := '1';
-        initial_content: types.State := (others => (others => '0'))
+        initial_content: types.Contents := (others => (others => '0'))
     );
     port(
         clk, w, r, se: in std_ulogic;
@@ -29,7 +29,7 @@ entity RAM is
 end;
 
 architecture behaviour of RAM is
-    signal contents: types.State := initial_content;
+    signal contents: types.Contents := initial_content;
 
     signal pending_write: std_ulogic := '0';
     signal read_data, masked_data, mask, res: types.word;
