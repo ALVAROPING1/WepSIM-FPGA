@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "pyfpga>=0.4.0",
     "pytest>=8.4.2",
     "vunit-hdl==5.0.0.dev6",
 ]
