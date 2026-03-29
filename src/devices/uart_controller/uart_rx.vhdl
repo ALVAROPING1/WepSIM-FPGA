@@ -34,9 +34,15 @@ begin
     rx_filtered <= state(state'high);
 
     receive: process(clk)
+        variable start, idle: boolean;
     begin
         if rising_edge(clk) and clk_e = '1' then
-            if tick = 15 or (receiving = '0' and rx_filtered = '0' and tick = 7) or (receiving = '0' and rx_filtered = '1') then
+            start := receiving = '0' and rx_filtered = '0'; -- Check for packet start
+            idle := receiving = '0' and rx_filtered = '1'; -- Check for idle
+            -- Re-synchronize clock half a transmission bit after we detect the
+            -- start bit. This allows to sample data bits on the middle of their
+            -- transmission to minimize errors
+            if tick = 15 or (start and tick = 7) or idle then
                 tick <= 0;
                 if receiving then
                     if count < 8 then
