@@ -12,7 +12,7 @@ end;
 
 architecture behaviour of UARTController_TB is
     constant BUF_SIZE: positive := 16;
-    constant CLK_MUL: positive := 16;
+    constant CLK_MUL: positive := 8;
     constant UART_PERIOD: time := 2 us * CLK_MUL;
     signal clk, clk_uart, ior, iow: std_ulogic := '0';
     signal rx, cts, tx, rts: std_ulogic := '1';

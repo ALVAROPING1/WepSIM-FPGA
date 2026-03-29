@@ -30,7 +30,7 @@ architecture behaviour of UARTController is
     signal rx_data, tx_data: std_ulogic_vector(7 downto 0);
 begin
     clk_div: entity work.ClkDivider
-        generic map (clk_freq, baud_rate*16)
+        generic map (clk_freq, baud_rate*8)
         port map (clk, clk_e);
 
     uart_tx: entity work.UARTTX port map (clk, clk_e, not tx_empty, tx, cts, tx_data, accept_in => open, accepted => tx_accepted);

@@ -11,7 +11,7 @@ entity UARTTX_TB is
 end;
 
 architecture behaviour of UARTTX_TB is
-    constant CLK_MUL: positive := 16;
+    constant CLK_MUL: positive := 8;
     constant UART_PERIOD: time := 2 us * CLK_MUL;
     signal clk, clk_uart, iow, accept_in, accepted: std_ulogic := '0';
     signal tx, tx_filtered, cts: std_ulogic := '1';

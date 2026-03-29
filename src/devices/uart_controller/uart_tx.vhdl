@@ -19,9 +19,8 @@ end;
 architecture behaviour of UARTTX is
     signal sending, n_sending: std_ulogic := '0';
     signal count: integer range -1 to 8 := 0;
-    signal tick: natural range 0 to 15 := 0;
+    signal tick: natural range 0 to 7 := 0;
 begin
-
     control: process(all)
     begin
         if sending then
@@ -43,7 +42,7 @@ begin
     begin
         if rising_edge(clk) then
             if clk_e then
-                if tick = 15 or sending = '0' then
+                if tick = tick'high or sending = '0' then
                     tick <= 0;
                     sending <= n_sending;
                     count <= count + 1 when sending and n_sending else -1;

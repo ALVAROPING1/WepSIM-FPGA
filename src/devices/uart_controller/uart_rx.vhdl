@@ -20,7 +20,7 @@ architecture behaviour of UARTRX is
     signal receiving, rx_filtered: std_ulogic := '0';
     signal count: natural range 0 to 8 := 0;
     signal data_buf: std_ulogic_vector(7 downto 0) := (others => '0');
-    signal tick: natural range 0 to 15 := 0;
+    signal tick: natural range 0 to 7 := 0;
     signal state: unsigned(1 downto 0) := "00";
 begin
     filter: process(clk)
@@ -35,6 +35,7 @@ begin
 
     receive: process(clk)
         variable start, idle: boolean;
+        constant midpoint: positive := (tick'high + state'high + 2) / 2;
     begin
         if rising_edge(clk) and clk_e = '1' then
             start := receiving = '0' and rx_filtered = '0'; -- Check for packet start
@@ -42,7 +43,7 @@ begin
             -- Re-synchronize clock half a transmission bit after we detect the
             -- start bit. This allows to sample data bits on the middle of their
             -- transmission to minimize errors
-            if tick = 15 or (start and tick = 7) or idle then
+            if tick = tick'high or (start and tick = midpoint) or idle then
                 tick <= 0;
                 if receiving then
                     if count < 8 then

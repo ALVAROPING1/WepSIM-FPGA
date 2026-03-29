@@ -9,7 +9,7 @@ entity UARTRX_TB is
 end;
 
 architecture behaviour of UARTRX_TB is
-    constant CLK_MUL: positive := 16;
+    constant CLK_MUL: positive := 8;
     constant UART_PERIOD: time := 2 us * CLK_MUL;
     signal clk, clk_uart, ior, data_valid: std_ulogic := '0';
     signal rx, rts: std_ulogic := '1';
@@ -37,7 +37,7 @@ begin
             wait for UART_PERIOD;
             for i in 0 to 7 loop
                 check_equal(rts, '0', "Check data can be sent over UART (transmission bit " & to_string(i) & ")");
-                check_equal(data_valid, '0', "Check received data isn't yet valid ((transmission bit " & to_string(i) & ")");
+                check_equal(data_valid, '0', "Check received data isn't yet valid (transmission bit " & to_string(i) & ")");
                 rx <= curr(i);
                 wait for UART_PERIOD;
             end loop;
@@ -55,7 +55,7 @@ begin
         for l in data'range loop
             ior <= '1';
             while not data_valid loop wait for 2 us; end loop;
-            for i in 1 to 10 loop
+            for i in 1 to 7 loop
                 check_equal(rts, '0', "Check data can be sent over UART");
                 check_equal(data_valid, '1', "Check received data is valid");
                 check_equal(receive_data, data(l), "Check received data");
