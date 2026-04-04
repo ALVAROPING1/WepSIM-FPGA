@@ -26,7 +26,7 @@ begin
         generic map (CLK_MUL, 1, BUF_SIZE)
         port map (clk, ior, iow, rx, cts, tx, rts, send_data, receive_data, can_send, can_receive);
 
-    uart_tx: entity src.UARTTX port map (clk, '1', '1', rx, rts, pc_send, accept_in => open, accepted => accepted);
+    uart_tx: entity src.UARTTX port map (clk, '1', '1', rx, rts, pc_send, accepted);
     uart_rx: entity src.UARTRX port map (clk, '1', '1', tx, cts, pc_receive, rx_valid);
 
     utils.clk_gen(clk);

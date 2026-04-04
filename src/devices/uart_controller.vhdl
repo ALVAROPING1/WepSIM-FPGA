@@ -33,7 +33,7 @@ begin
         generic map (clk_freq, baud_rate*8)
         port map (clk, clk_e);
 
-    uart_tx: entity work.UARTTX port map (clk, clk_e, not tx_empty, tx, cts, tx_data, accept_in => open, accepted => tx_accepted);
+    uart_tx: entity work.UARTTX port map (clk, clk_e, not tx_empty, tx, cts, tx_data, tx_accepted);
     uart_rx: entity work.UARTRX port map (clk, clk_e, not rx_af, rx, rts, rx_data, rx_valid);
 
     accepted_edge: entity work.EdgeDetector port map (clk, tx_accepted, tx_read);

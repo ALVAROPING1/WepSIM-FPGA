@@ -13,13 +13,13 @@ end;
 architecture behaviour of UARTTX_TB is
     constant CLK_MUL: positive := 8;
     constant UART_PERIOD: time := 2 us * CLK_MUL;
-    signal clk, clk_uart, iow, accept_in, accepted: std_ulogic := '0';
+    signal clk, clk_uart, iow, accepted: std_ulogic := '0';
     signal tx, tx_filtered, cts: std_ulogic := '1';
     signal send_data: std_ulogic_vector(7 downto 0);
     signal data: std_ulogic_matrix(1 to 2000)(7 downto 0);
     signal tx_state: unsigned(1 downto 0) := "00";
 begin
-    dut: entity src.UARTTX port map (clk, '1', iow, tx, cts, send_data, accept_in, accepted);
+    dut: entity src.UARTTX port map (clk, '1', iow, tx, cts, send_data, accepted);
 
     utils.clk_gen(clk);
     utils.clk_gen(clk_uart, period => UART_PERIOD);
@@ -41,16 +41,15 @@ begin
             wait for rnd.RandTime(0 us, 1 * UART_PERIOD);
             while tx_filtered loop wait for UART_PERIOD; end loop;
             check_equal(tx_filtered, '0', "Check transmission bit (start bit)");
-            check_equal(accept_in, '0', "Check more data can't be sent (start bit)");
             info("Detected start bit");
             wait for UART_PERIOD;
             for i in 0 to 7 loop
                 check_equal(tx_filtered, data(l)(i), "Check transmission bit " & to_string(i));
-                check_equal(accept_in, '0', "Check more data can't be sent (transmission bit " & to_string(i) & ")");
                 wait for UART_PERIOD;
             end loop;
             check_equal(tx_filtered, '1', "Check transmission bit (stop bit)");
         end loop;
+        wait;
     end process;
 
     fpga: process
@@ -60,20 +59,14 @@ begin
         test_runner_setup(runner, runner_cfg);
         wait for 1 us;
         for l in data'range loop
-            while not accept_in loop wait for 2 us; end loop;
             curr := rnd.RandSlv(8);
             data(l) <= curr;
             info("Receiving " & to_string(curr) & ", check sent data");
             iow <= '1';
             send_data <= curr;
-            check_equal(accepted, '0', "Check accepted");
-            check_equal(accept_in, '1', "Check accepted");
-            while accept_in loop wait for 2 us; end loop;
-            check_equal(accepted, '0', "Check accepted");
-            check_equal(accept_in, '0', "Check accepted");
+            while accepted loop wait for 2 us; end loop;
             while not accepted loop wait for 2 us; end loop;
             check_equal(accepted, '1', "Check accepted");
-            check_equal(accept_in, '0', "Check accepted");
             if rnd.RandInt(0, 9) = 0 then
                 iow <= '0';
                 send_data <= (others => 'Z');

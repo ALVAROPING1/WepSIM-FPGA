@@ -12,7 +12,7 @@ entity UARTTX is
         -- CPU input/output
         data: in std_ulogic_vector(7 downto 0);
         -- CPU status signals
-        accept_in, accepted: out std_ulogic
+        accepted: out std_ulogic
     );
 end;
 
@@ -26,14 +26,12 @@ begin
     begin
         start := iow and not cts;
         if sending then
-            accept_in <= '0';
             n_sending <= '1' when count < 8 else start;
             tx <= '0'         when count = -1 else
                   data(count) when count < 8  else
                   '1';
             accepted <= '1' when count = 8 else '0';
         else
-            accept_in <= not cts;
             n_sending <= start;
             tx <= '1';
             accepted <= '0';
