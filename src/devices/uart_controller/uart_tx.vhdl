@@ -22,17 +22,19 @@ architecture behaviour of UARTTX is
     signal tick: natural range 0 to 7 := 0;
 begin
     control: process(all)
+        variable start: std_ulogic;
     begin
+        start := iow and not cts;
         if sending then
             accept_in <= '0';
-            n_sending <= '1' when count < 8 else '0';
+            n_sending <= '1' when count < 8 else start;
             tx <= '0'         when count = -1 else
                   data(count) when count < 8  else
                   '1';
             accepted <= '1' when count = 8 else '0';
         else
             accept_in <= not cts;
-            n_sending <= iow and not cts;
+            n_sending <= start;
             tx <= '1';
             accepted <= '0';
         end if;
@@ -45,7 +47,7 @@ begin
                 if tick = tick'high or sending = '0' then
                     tick <= 0;
                     sending <= n_sending;
-                    count <= count + 1 when sending and n_sending else -1;
+                    count <= count + 1 when sending = '1' and count < 8 else -1;
                 else
                     tick <= tick + 1;
                 end if;

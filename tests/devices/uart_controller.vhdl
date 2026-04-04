@@ -17,7 +17,7 @@ architecture behaviour of UARTController_TB is
     signal clk, clk_uart, ior, iow: std_ulogic := '0';
     signal rx, cts, tx, rts: std_ulogic := '1';
     signal send_data, receive_data, pc_send, pc_receive: std_ulogic_vector(7 downto 0);
-    signal can_send, can_receive, rx_valid, accept_in, accepted: std_ulogic := '0';
+    signal can_send, can_receive, rx_valid, accepted: std_ulogic := '0';
     signal count: integer_vector(1 to 2000) := (others => -1);
     signal data: src.utils.std_ulogic_matrix(count'range)(7 downto 0);
     signal done: boolean := false;
@@ -26,7 +26,7 @@ begin
         generic map (CLK_MUL, 1, BUF_SIZE)
         port map (clk, ior, iow, rx, cts, tx, rts, send_data, receive_data, can_send, can_receive);
 
-    uart_tx: entity src.UARTTX port map (clk, '1', '1', rx, rts, pc_send, accept_in => accept_in, accepted => accepted);
+    uart_tx: entity src.UARTTX port map (clk, '1', '1', rx, rts, pc_send, accept_in => open, accepted => accepted);
     uart_rx: entity src.UARTRX port map (clk, '1', '1', tx, cts, pc_receive, rx_valid);
 
     utils.clk_gen(clk);
@@ -38,10 +38,10 @@ begin
     begin
         wait for 1 us;
         for l in data'range loop
-            while not accept_in loop wait for 2 us; end loop;
             curr := rnd.RandSlv(8);
             data(l) <= curr;
             pc_send <= curr;
+            while accepted loop wait for 2 us; end loop;
             while not accepted loop wait for 2 us; end loop;
         end loop;
         wait;
@@ -55,7 +55,7 @@ begin
             for r in 1 to count(l) loop
                 info("pc rx: " & to_string(l) & " - " & to_string(r));
                 while not rx_valid loop wait for UART_PERIOD; end loop;
-                check_equal(pc_receive, data(l), "Check received data");
+                check_equal(pc_receive, data(l), "Check received data (pc)");
                 wait for UART_PERIOD;
             end loop;
         end loop;
@@ -74,6 +74,7 @@ begin
             end if;
             while not (can_send and can_receive) loop wait for 2 us; end loop;
             ior <= '1', '0' after 2 us;
+            check_equal(receive_data, data(l), "Check received data (fpga)");
             send_data <= receive_data;
             repeats := rnd.RandInt(2, 8) when rnd.RandInt(0, 9) = 0 else 1;
             count(l) <= repeats;
@@ -85,5 +86,6 @@ begin
                 while not can_send loop wait for 2 us; end loop;
             end loop;
         end loop;
+        wait;
     end process;
 end;
