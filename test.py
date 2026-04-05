@@ -66,6 +66,7 @@ if __name__ == "__main__":
         ["offset_size", "out_size"],
         [[1, 1], [2, 1], [4, 1], [4, 8], [5, 5]],
     )
+    generic_test("ImmediateDecoder_TB", ["offset_size"], [1, 2, 3, 4, 5, 6])
     generic_test("EdgeDetector_TB", ["edge"], ["'1'", "'0'"])
     # vhdl only guarantees up to 32 bit ints, so we can't go higher than that
     generic_test("Adder_TB", ["size"], [4, 8, 16, 24, 31])
