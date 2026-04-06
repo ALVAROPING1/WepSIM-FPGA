@@ -7,7 +7,7 @@ entity UART is
     generic(size, clk_freq, baud_rate: positive);
     port(
         -- CPU
-        clk, ior, iow: in std_ulogic;
+        clk, iow, ior: in std_ulogic;
         addr: in unsigned(15 downto 0);
         data: inout std_logic_vector(size - 1 downto 0);
         -- UART pins
@@ -33,7 +33,7 @@ begin
 
     controller: entity work.UARTController
         generic map (clk_freq, baud_rate)
-        port map (clk, rd, wd, rx, cts, tx, rts, data(7 downto 0), receive_data, can_send, can_receive);
+        port map (clk, wd, rd, rx, cts, tx, rts, data(7 downto 0), receive_data, can_send, can_receive);
 
     read_data: entity work.TriState generic map (size) port map (PAD8 & receive_data, data, rd);
     read_status: entity work.TriState generic map (size) port map (PAD1 & can_receive, data, rs);

@@ -24,7 +24,7 @@ architecture behaviour of UARTController_TB is
 begin
     dut: entity src.UARTController
         generic map (CLK_MUL, 1, BUF_SIZE)
-        port map (clk, ior, iow, rx, cts, tx, rts, send_data, receive_data, can_send, can_receive);
+        port map (clk, iow, ior, rx, cts, tx, rts, send_data, receive_data, can_send, can_receive);
 
     uart_tx: entity src.UARTTX port map (clk, '1', '1', rx, rts, pc_send, accepted);
     uart_rx: entity src.UARTRX port map (clk, '1', '1', tx, cts, pc_receive, rx_valid);

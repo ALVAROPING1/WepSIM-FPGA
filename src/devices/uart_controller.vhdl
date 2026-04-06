@@ -11,7 +11,7 @@ entity UARTController is
     );
     port(
         -- CPU control signals
-        clk, ior, iow: in std_ulogic;
+        clk, iow, ior: in std_ulogic;
         -- UART pins
         rx, cts: in std_ulogic;
         tx, rts: out std_ulogic;
