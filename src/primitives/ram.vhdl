@@ -30,6 +30,8 @@ end;
 
 architecture behaviour of RAM is
     signal contents: types.Contents := initial_content;
+    attribute ram_style: string;
+    attribute ram_style of contents: signal is "block";
 
     signal pending_write: std_ulogic := '0';
     signal read_data, masked_data, mask, res: types.word;
