@@ -1,12 +1,13 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.utils.std_ulogic_matrix;
 
 package ram_generics is
     generic (size, addr_size: positive);
     subtype Address is natural range 0 to 2**(addr_size-2) - 1;
     subtype word is std_ulogic_vector(size - 1 downto 0);
-    type Contents is array (Address) of word;
+    subtype Contents is std_ulogic_matrix(Address)(word'range);
 end package ram_generics;
 
 library ieee;
@@ -21,7 +22,7 @@ entity RAM is
     );
     port(
         clk, w, r, se: in std_ulogic;
-        bw: in std_ulogic_vector(1 downto 0);
+        bw: in unsigned(1 downto 0);
         addr: in unsigned(types.addr_size - 1 downto 0);
         data: inout types.word
     );
@@ -29,59 +30,25 @@ entity RAM is
 end;
 
 architecture behaviour of RAM is
-    signal contents: types.Contents := initial_content;
-    attribute ram_style: string;
-    attribute ram_style of contents: signal is "block";
-
-    signal pending_write: std_ulogic := '0';
-    signal read_data, masked_data, mask, res: types.word;
-    signal bits, prev_bits: positive range 1 to size := size;
-    signal offset, prev_offset: natural range 0 to size-1 := 0;
-    signal word_addr, prev_word_addr: types.Address := 0;
+    signal w_enable: std_ulogic_vector(3 downto 0);
+    signal ram_in, ram_out, word_out: data'subtype;
+    constant byte_size: positive := types.size / 4;
 begin
-    -- Calculate section to read/write
-    with bw select
-        bits <= size/4 when "00",
-                size/2 when "01",
-                size   when others;
-    with bw select
-        offset <= to_integer(addr(1 downto 0)) * size/4 when "00",
-                  to_integer(addr(1 downto 1)) * size/2 when "01",
-                  0                                     when others;
-    word_addr <= to_integer(addr(addr'high downto 2));
+    bram: entity work.BlockRAM
+        generic map (byte_size, types.addr_size - 2, 4, clk_edge, initial_content)
+        port map (
+            clk, w and w_enable,
+            addr(addr'high downto 2),
+            ram_in, ram_out
+        );
 
-    -- Synchronous read/write
-    process(all)
-    begin
-        masked_data <= read_data;
-        masked_data(prev_offset + prev_bits - 1 downto prev_offset) <= mask(prev_bits - 1 downto 0);
-    end process;
+    selector: entity work.ByteSelector generic map (byte_size, 2) port map (
+        ram_out, data,
+        ram_in, word_out,
+        addr(1 downto 0), bw,
+        w_enable,
+        se
+    );
 
-    process(clk)
-    begin
-        if clk'event and clk = clk_edge then
-            read_data <= contents(word_addr);
-            if pending_write then
-                contents(prev_word_addr) <= masked_data;
-            end if;
-
-            mask <= data;
-            pending_write <= w;
-            prev_offset <= offset;
-            prev_bits <= bits;
-            prev_word_addr <= word_addr;
-        end if;
-    end process;
-
-    -- Post-process reads
-    process(read_data, offset, bits, se)
-    begin
-        res <= (others => '0');
-        res(bits - 1 downto 0) <= read_data(offset + bits - 1 downto offset);
-        if bits - 1 < res'high then
-            res(res'high downto bits)
-                <= (others => read_data(offset + bits - 1)) when se else (others => '0');
-        end if;
-    end process;
-    data <= res when not w and r else (others => 'Z');
+    data <= word_out when not w and r else (others => 'Z');
 end;

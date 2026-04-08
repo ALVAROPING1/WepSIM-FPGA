@@ -13,7 +13,7 @@ architecture tb of RAM_TB is
     signal addr: unsigned(addr_size - 1 downto 0);
     signal data: std_logic_vector(size - 1 downto 0) := (others => 'Z');
     signal clk, w, r, se: std_ulogic := '0';
-    signal bw: std_ulogic_vector(1 downto 0) := "11";
+    signal bw: unsigned(1 downto 0) := "11";
     constant ADDRESSES: positive := 2**(addr_size - 2);
     signal state: std_ulogic_vector(ADDRESSES * size - 1 downto 0) := (others => '0');
     package types is new src.ram_generics generic map (size, addr_size);
@@ -28,8 +28,8 @@ begin
         constant Z: std_ulogic_vector(size - 1 downto 0) := (others => 'Z');
 
         variable bits, word_addr, offset, high: natural;
-        variable v_bw: std_ulogic_vector(bw'range);
-        variable v_addr: unsigned(addr'range);
+        variable v_bw: bw'subtype;
+        variable v_addr: addr'subtype;
     begin
         test_runner_setup(runner, runner_cfg);
         set_format(display_handler, use_color => true, log_time_unit => auto_time_unit);
@@ -43,7 +43,7 @@ begin
 
         for i in 0 to maximum(1000, ADDRESSES) loop
             v_addr := rnd.RandUnsigned(addr_size);
-            v_bw := rnd.RandSlv(2);
+            v_bw := rnd.RandUnsigned(2);
             addr <= v_addr;
             bw <= v_bw;
             with v_bw select
