@@ -18,7 +18,7 @@ architecture tb of ByteSelector_TB is
 begin
     dut: entity src.ByteSelector
         generic map (byte_size, log_n_bytes)
-        port map(bytes_in, word_in, bytes_out, word_out, addr, bw, byte_enable, sign_extend);
+        port map(bytes_in, word_in, bytes_out, word_out, addr, bw, sign_extend, byte_enable);
 
     main: process
         variable rnd: RandomPType;

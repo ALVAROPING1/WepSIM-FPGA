@@ -64,16 +64,14 @@ begin
                     state(high downto word_addr) <= data(bits - 1 downto 0);
                     data <= Z;
                     addr <= (others => 'Z');
-                    w <= '0'; bw <= "11";
-                    wait for 2 us;
                 when 1 => -- Read
                     w <= '0'; r <= '1';
+                    se <= '0';
                     wait for 2 us;
                     check_equal(data, resize(unsigned(state(high downto word_addr)), data'high + 1), "Check output after read (unsigned)");
                     se <= '1';
                     wait for 2 us;
                     check_equal(signed(data), resize(signed(state(high downto word_addr)), data'high + 1), "Check output after read (signed)");
-                    se <= '0';
                 when others => -- No-op
                     w <= '0'; r <= '0';
                     wait for 2 us;

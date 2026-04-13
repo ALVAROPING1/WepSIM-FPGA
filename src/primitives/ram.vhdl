@@ -26,7 +26,6 @@ entity RAM is
         addr: in unsigned(types.addr_size - 1 downto 0);
         data: inout types.word
     );
-    use types.size;
 end;
 
 architecture behaviour of RAM is
@@ -46,9 +45,9 @@ begin
         ram_out, data,
         ram_in, word_out,
         addr(1 downto 0), bw,
-        w_enable,
-        se
+        se,
+        w_enable
     );
 
-    data <= word_out when not w and r else (others => 'Z');
+    t: entity work.TriState generic map (types.size) port map (word_out, data, not w and r);
 end;

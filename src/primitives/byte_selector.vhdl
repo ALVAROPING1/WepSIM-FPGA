@@ -10,8 +10,8 @@ entity ByteSelector is
         bytes_in, word_in: in std_ulogic_vector(byte_size * 2**log_n_bytes - 1 downto 0);
         bytes_out, word_out: out bytes_in'subtype;
         addr, bw: in unsigned(log_n_bytes - 1 downto 0);
-        byte_enable: out std_ulogic_vector(2**log_n_bytes - 1 downto 0);
         sign_extend: in std_ulogic;
+        byte_enable: out std_ulogic_vector(2**log_n_bytes - 1 downto 0);
     );
 end;
 
