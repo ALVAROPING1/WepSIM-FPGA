@@ -3,7 +3,8 @@ context work.tb_context;
 entity ByteSelector_TB is
     generic (
         runner_cfg: string;
-        byte_size, log_n_bytes: positive
+        byte_size, log_n_bytes: positive;
+        little_endian: boolean
     );
 end;
 
@@ -17,17 +18,32 @@ architecture tb of ByteSelector_TB is
     signal sign_extend: std_ulogic;
 begin
     dut: entity src.ByteSelector
-        generic map (byte_size, log_n_bytes)
+        generic map (byte_size, log_n_bytes, little_endian)
         port map(bytes_in, word_in, bytes_out, word_out, addr, bw, sign_extend, byte_enable);
 
     main: process
         variable rnd: RandomPType;
         constant ZERO: word_out'subtype := (others => '0');
-        variable size: positive;
-        variable offset: natural;
+        variable size: positive range 1 to n_bytes := 1;
+        variable bits: positive range 1 to bytes_in'high + 1;
+        variable offset: natural := 0;
         variable pow: natural range 0 to bw'high + 1;
         variable v_addr: unsigned(addr'high + 1 downto 0);
         variable res_bytes, res_word: word_in'subtype;
+
+        impure function reorder(bytes: std_ulogic_vector) return std_ulogic_vector is
+            variable buf: bytes'subtype := bytes;
+            variable pos: natural range 0 to bytes'high;
+        begin
+            if not little_endian then
+                for i in 0 to size - 1 loop
+                    pos := i * byte_size;
+                    buf(bits - pos - 1 downto bits - pos - byte_size)
+                        := bytes(pos + byte_size - 1 downto pos);
+                end loop;
+            end if;
+            return buf;
+        end function;
     begin
         test_runner_setup(runner, runner_cfg);
         for i in 1 to 1000 loop
@@ -43,27 +59,29 @@ begin
             sign_extend <= '0';
             wait for 2 us;
             -- Validate bytes_out
-            size := size * byte_size;
+            bits := size * byte_size;
             offset := offset * byte_size;
             res_bytes := (others => '0');
-            res_bytes(size + offset - 1 downto offset) := word_in(size - 1 downto 0);
+            res_bytes(bits + offset - 1 downto offset)
+                := reorder(word_in(bits - 1 downto 0));
             check_equal(bytes_out, res_bytes, "Check bytes out");
             check_equal(word_out, ZERO, "Check word out (zero)");
             -- Copy bytes_out to bytes_in, filling other bits randomly
             bytes_in <= rnd.RandSlv(bytes_in'high + 1);
-            bytes_in(size + offset - 1 downto offset) <= word_in(size - 1 downto 0);
+            bytes_in(bits + offset - 1 downto offset)
+                <= reorder(word_in(bits - 1 downto 0));
             wait for 2 us;
             -- Validate word_out (unsigned)
             check_equal(bytes_out, res_bytes, "Check bytes out");
             res_word := (others => '0');
-            res_word(size - 1 downto 0) := word_in(size - 1 downto 0);
+            res_word(bits - 1 downto 0) := word_in(bits - 1 downto 0);
             check_equal(word_out, res_word, "Check word out (unsigned)");
             sign_extend <= '1';
             wait for 2 us;
             -- Validate word_out (signed)
             check_equal(bytes_out, res_bytes, "Check bytes out");
-            if size - 1 < res_word'high then
-                res_word(res_word'high downto size) := (others => word_in(size - 1));
+            if bits - 1 < res_word'high then
+                res_word(res_word'high downto bits) := (others => word_in(bits - 1));
             end if;
             check_equal(word_out, res_word, "Check word out (signed)");
         end loop;

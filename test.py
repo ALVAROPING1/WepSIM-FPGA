@@ -51,8 +51,19 @@ if __name__ == "__main__":
     )
     generic_test(
         "ByteSelector_TB",
-        ["byte_size", "log_n_bytes"],
-        [[1, 1], [2, 1], [8, 1], [2, 2], [8, 2], [8, 3]],
+        ["byte_size", "log_n_bytes", "little_endian"],
+        [
+            [1, 1, True],
+            [1, 1, False],
+            [2, 1, True],
+            [2, 1, False],
+            [8, 1, True],
+            [2, 2, True],
+            [2, 2, False],
+            [8, 2, True],
+            [8, 2, False],
+            [8, 3, True],
+        ],
     )
     generic_test(
         "BlockRAM_TB",

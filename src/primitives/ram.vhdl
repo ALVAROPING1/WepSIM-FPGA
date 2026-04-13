@@ -17,6 +17,7 @@ use ieee.numeric_std.all;
 entity RAM is
     generic(
         package types is new work.ram_generics generic map (<>);
+        little_endian: boolean := true;
         clk_edge: std_ulogic := '1';
         initial_content: types.Contents := (others => (others => '0'))
     );
@@ -41,13 +42,15 @@ begin
             ram_in, ram_out
         );
 
-    selector: entity work.ByteSelector generic map (byte_size, 2) port map (
-        ram_out, data,
-        ram_in, word_out,
-        addr(1 downto 0), bw,
-        se,
-        w_enable
-    );
+    selector: entity work.ByteSelector
+        generic map (byte_size, 2, little_endian) 
+        port map (
+            ram_out, data,
+            ram_in, word_out,
+            addr(1 downto 0), bw,
+            se,
+            w_enable
+        );
 
     t: entity work.TriState generic map (types.size) port map (word_out, data, not w and r);
 end;
