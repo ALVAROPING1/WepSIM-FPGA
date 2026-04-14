@@ -12,13 +12,13 @@ end;
 architecture tb of RAM_TB is
     signal addr: unsigned(addr_size - 1 downto 0);
     signal data: std_logic_vector(size - 1 downto 0) := (others => 'Z');
-    signal clk, w, r, se: std_ulogic := '0';
+    signal clk, w, r, se, m_rdy: std_ulogic := '0';
     signal bw: unsigned(1 downto 0) := "11";
     constant ADDRESSES: positive := 2**(addr_size - 2);
     signal state: std_ulogic_vector(ADDRESSES * size - 1 downto 0) := (others => '0');
     package types is new src.ram_generics generic map (size, addr_size);
 begin
-    dut: entity src.RAM generic map(types) port map(clk, w, r, se, bw, addr, data);
+    dut: entity src.RAM generic map(types) port map(clk, w, r, se, bw, addr, data, m_rdy);
 
     utils.clk_gen(clk);
 
@@ -38,6 +38,7 @@ begin
         for i in 0 to ADDRESSES - 1 loop
             addr <= to_unsigned(i, addr_size);
             wait for 2 us;
+            check_equal(m_rdy, '1', "Check read ready");
             check_equal(data, ZERO, "Check output initialization");
         end loop;
 
@@ -64,17 +65,21 @@ begin
                     state(high downto word_addr) <= data(bits - 1 downto 0);
                     data <= Z;
                     addr <= (others => 'Z');
+                    check_equal(m_rdy, '1', "Check write done");
                 when 1 => -- Read
                     w <= '0'; r <= '1';
                     se <= '0';
                     wait for 2 us;
+                    check_equal(m_rdy, '1', "Check read ready");
                     check_equal(data, resize(unsigned(state(high downto word_addr)), data'high + 1), "Check output after read (unsigned)");
                     se <= '1';
                     wait for 2 us;
+                    check_equal(m_rdy, '1', "Check read ready");
                     check_equal(signed(data), resize(signed(state(high downto word_addr)), data'high + 1), "Check output after read (signed)");
                 when others => -- No-op
                     w <= '0'; r <= '0';
                     wait for 2 us;
+                    check_equal(m_rdy, '0', "Check no operation done");
                     check_equal(data, Z, "Check output after no-op");
             end case;
         end loop;
@@ -83,6 +88,7 @@ begin
         for i in 0 to ADDRESSES - 1 loop
             addr <= to_unsigned(i, addr_size - 2) & "00";
             wait for 2 us;
+            check_equal(m_rdy, '1', "Check read ready");
             check_equal(data, state((i+1) * size - 1 downto i * size), "Check output in final state");
         end loop;
         test_runner_cleanup(runner);

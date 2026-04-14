@@ -25,7 +25,8 @@ entity RAM is
         clk, w, r, se: in std_ulogic;
         bw: in unsigned(1 downto 0);
         addr: in unsigned(types.addr_size - 1 downto 0);
-        data: inout types.word
+        data: inout types.word;
+        m_rdy: out std_ulogic
     );
 end;
 
@@ -33,6 +34,7 @@ architecture behaviour of RAM is
     signal w_enable: std_ulogic_vector(3 downto 0);
     signal ram_in, ram_out, word_out: data'subtype;
     constant byte_size: positive := types.size / 4;
+    signal prev_w: std_ulogic;
 begin
     bram: entity work.BlockRAM
         generic map (byte_size, types.addr_size - 2, 4, clk_edge, initial_content)
@@ -53,4 +55,12 @@ begin
         );
 
     t: entity work.TriState generic map (types.size) port map (word_out, data, not w and r);
+
+    w_reg: entity work.Reg generic map (1, clk_edge) port map (
+        clk, '1',
+        data_in(0) => w,
+        data_out(0) => prev_w
+    );
+
+    m_rdy <= prev_w or r;
 end;
