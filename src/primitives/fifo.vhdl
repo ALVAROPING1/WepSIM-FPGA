@@ -27,14 +27,7 @@ architecture behaviour of FIFO is
     signal w_idx, r_idx: natural range 0 to capacity - 1 := 0;
     signal count: natural range 0 to capacity := 0;
 
-    pure function inc_mod(x: natural) return natural is
-    begin
-        if x < capacity - 1 then
-            return x + 1;
-        else
-            return 0;
-        end if;
-    end function;
+    use work.utils.inc_mod;
 begin
     control: process(clk)
     begin
@@ -46,10 +39,10 @@ begin
             end if;
 
             if w and not (full_buf and not r) then
-                w_idx <= inc_mod(w_idx);
+                w_idx <= inc_mod(w_idx, capacity);
             end if;
             if r and not empty_buf then
-                r_idx <= inc_mod(r_idx);
+                r_idx <= inc_mod(r_idx, capacity);
             end if;
 
             if w and not (full_buf and not r) then

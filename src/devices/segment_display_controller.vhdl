@@ -42,7 +42,7 @@ begin
         if rising_edge(clk) then
             n_acc := acc + 1;
             if acc(acc'high) /= n_acc(acc'high) then
-                enable <= (enable + 1) mod digits;
+                pos <= work.utils.inc_mod(pos, digits);
             end if;
             acc <= n_acc;
         end if;

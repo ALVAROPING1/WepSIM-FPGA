@@ -11,6 +11,7 @@ package utils is
     pure function lcm(a, b: natural) return natural;
     pure function gcd(a, b: natural) return natural;
     pure function bits(x: natural) return natural;
+    pure function inc_mod(x: natural; m: positive) return natural;
 end package;
 
 package body utils is
@@ -44,5 +45,14 @@ package body utils is
         use ieee.math_real.all;
     begin
         return natural(floor(log2(real(x)))) + 1;
+    end function;
+
+    pure function inc_mod(x: natural; m: positive) return natural is
+    begin
+        if x < m - 1 then
+            return x + 1;
+        else
+            return 0;
+        end if;
     end function;
 end package body utils;
