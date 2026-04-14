@@ -8,12 +8,13 @@ entity SegmentDisplayController is
         clk, display_hex: in std_ulogic;
         data_in: in std_ulogic_vector(digits * 8 - 1 downto 0);
         segment: out std_ulogic_vector(7 downto 0);
-        enable: buffer natural range 0 to digits - 1 := 0
+        enable: out natural range 0 to digits - 1
     );
 end;
 
 architecture behaviour of SegmentDisplayController is
     signal acc: unsigned(clk_subsample_bits - 1 downto 0) := (others => '0');
+    signal pos: natural range 0 to enable'high := 0;
 
     type digit_table is array (natural range 0 to 15) of std_ulogic_vector(7 downto 0);
     constant tbl: digit_table := (
@@ -47,6 +48,7 @@ begin
         end if;
     end process;
 
-    segment <= tbl(to_integer(unsigned(data_in(enable * 4 + 3 downto enable * 4)))) when display_hex else
-               data_in(enable * 8 + 7 downto enable * 8);
+    enable <= pos;
+    segment <= tbl(to_integer(unsigned(data_in(pos * 4 + 3 downto pos * 4)))) when display_hex else
+               data_in(pos * 8 + 7 downto pos * 8);
 end;

@@ -15,13 +15,14 @@ entity FIFO is
         w_data: in std_ulogic_vector(size - 1 downto 0);
         r_data: out std_ulogic_vector(size - 1 downto 0);
         -- Status signals
-        full, empty, almost_full, almost_empty: buffer std_ulogic;
+        full, empty, almost_full, almost_empty: out std_ulogic;
     );
 end;
 
 architecture behaviour of FIFO is
     type FIFO_DATA is array (0 to capacity - 1) of std_ulogic_vector(size - 1 downto 0);
     signal contents: FIFO_DATA := (others => (others => '0'));
+    signal full_buf, empty_buf: std_ulogic;
 
     signal w_idx, r_idx: natural range 0 to capacity - 1 := 0;
     signal count: natural range 0 to capacity := 0;
@@ -38,29 +39,32 @@ begin
     control: process(clk)
     begin
         if rising_edge(clk) then
-            if w and not r and not full then
+            if w and not r and not full_buf then
                 count <= count + 1;
-            elsif r and not w and not empty then
+            elsif r and not w and not empty_buf then
                 count <= count - 1;
             end if;
 
-            if w and not (full and not r) then
+            if w and not (full_buf and not r) then
                 w_idx <= inc_mod(w_idx);
             end if;
-            if r and not empty then
+            if r and not empty_buf then
                 r_idx <= inc_mod(r_idx);
             end if;
 
-            if w and not (full and not r) then
+            if w and not (full_buf and not r) then
                 contents(w_idx) <= w_data;
             end if;
         end if;
     end process;
 
-    r_data <= contents(r_idx) when not empty else (others => '0');
+    r_data <= contents(r_idx) when not empty_buf else (others => '0');
 
-    full <= '1' when count = capacity else '0';
-    empty <= '1' when count = 0 else '0';
+    full_buf <= '1' when count = capacity else '0';
+    empty_buf <= '1' when count = 0 else '0';
     almost_full <= '1' when count > almost_full_level else '0';
     almost_empty <= '1' when count < almost_empty_level else '0';
+
+    full <= full_buf;
+    empty <= empty_buf;
 end;
