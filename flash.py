@@ -5,9 +5,8 @@ from pyfpga.vivado import Vivado
 prj = Vivado("vhdl", odir="build")
 prj.set_part("xc7a100tcsg324-1")
 prj.add_vhdl("src/**/*.vhdl")
-prj.add_cons("src/Nexys-A7-100T-Master.xdc")
-prj.set_top("Cpu")
-prj.add_param("size", "32")
+prj.add_cons("src/constraints.xdc")
+prj.set_top("Main")
 
 prj.add_hook(
     "postcfg",
