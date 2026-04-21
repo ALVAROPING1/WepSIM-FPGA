@@ -6,12 +6,13 @@ use work.utils.std_ulogic_matrix;
 
 entity OpcodeDecoder is
     generic(
-        size, opcode_size: positive;
-        patterns: std_ulogic_matrix(open)(size - 1 downto 0);
+        instruction_size, addr_size: positive;
+        patterns: std_ulogic_matrix(open)(instruction_size - 1 downto 0);
+        addr_table: std_ulogic_matrix(patterns'range)(addr_size - 1 downto 0);
     );
     port(
-        instruction: in std_ulogic_vector(size - 1 downto 0);
-        opcode: out unsigned(opcode_size - 1 downto 0);
+        instruction: in std_ulogic_vector(instruction_size - 1 downto 0);
+        addr: out std_ulogic_vector(addr_size - 1 downto 0);
         instruction_exception: out std_ulogic
     );
 end;
@@ -21,10 +22,10 @@ begin
     process(all)
     begin
         instruction_exception <= '1';
-        opcode <= (others => 'X');
+        addr <= (others => 'X');
         for i in patterns'range loop
             if instruction ?= patterns(i) then
-                opcode <= to_unsigned(i, opcode_size);
+                addr <= addr_table(i);
                 instruction_exception <= '0';
                 exit;
             end if;

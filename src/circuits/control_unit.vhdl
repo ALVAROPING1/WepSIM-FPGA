@@ -284,9 +284,8 @@ architecture behaviour of ControlUnit is
     signal inst: microinstruction;
     signal sel_ra_imm, sel_rb_imm, sel_rc_imm: std_ulogic_vector(4 downto 0);
     signal ra, rb, rc: std_ulogic_vector(4 downto 0);
-    signal opcode: unsigned(7 downto 0);
 
-    constant opcode_tbl: std_ulogic_matrix(0 to 2**opcode'high - 1)(opcode_addr'high downto 0) := (
+    constant opcode_tbl: std_ulogic_matrix(0 to 47)(opcode_addr'high downto 0) := (
         "100000000000", -- lui
         "100000000001", -- auipc
         "100000000101", -- jal
@@ -334,8 +333,7 @@ architecture behaviour of ControlUnit is
         "100010000011", -- mulhu
         "100010000100", -- in
         "100010001000", -- out
-        "100010001100", -- illegal instruction
-        others => (others => '0')
+        "100010001100"  -- illegal instruction
     );
 begin
     inst <= CONTROL_MEMORY(to_integer(unsigned(addr)));
@@ -372,7 +370,7 @@ begin
     maddr <= std_ulogic_vector(inst.sel_a & inst.sel_b & inst.sel_c(4 downto 3));
 
     decoder: entity work.OpcodeDecoder
-        generic map (size, 8, (
+        generic map (size, opcode_addr'high + 1, (
             -- RV32I
             "-------------------------0110111", -- lui
             "-------------------------0010111", -- auipc
@@ -426,10 +424,8 @@ begin
             "-------------------------0001011", -- in
             "-------------------------0101011", -- out
             "--------------------------------"  -- illegal instruction
-        ))
-        port map(instruction, opcode, inst_exception);
-
-    opcode_addr <= opcode_tbl(to_integer(opcode));
+        ), opcode_tbl)
+        port map(instruction, opcode_addr, inst_exception);
 
     addr_reg: entity work.Reg generic map(12) port map (clk, running, next_addr, addr);
 
