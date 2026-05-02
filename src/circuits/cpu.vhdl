@@ -7,7 +7,7 @@ use work.cpu_pkg.control_signals;
 use work.utils.std_ulogic_matrix;
 
 entity Cpu is
-    port(
+    port (
         clk, step_instruction, continue: in std_ulogic;
         address_bus: out std_ulogic_vector(31 downto 0);
         data_bus: inout std_logic_vector(31 downto 0);
@@ -32,21 +32,6 @@ architecture behaviour of Cpu is
     signal alu_state: std_ulogic_vector(3 downto 0);
     signal c_signals: control_signals;
     signal ex_code_sign: std_ulogic;
-
-    pure function riscv_immediate(id: natural; d_in: std_ulogic_vector)
-    return std_ulogic_vector is
-        variable d_out: std_ulogic_vector(d_in'range) := (others => '0');
-    begin
-        case id is
-            when 1 => d_out               := (32-12-1 downto 0 => d_in(31)) & d_in(31 downto 20);
-            when 2 => d_out               := (32-12-1 downto 0 => d_in(31)) & d_in(31 downto 25) & d_in(11 downto 7);
-            when 3 => d_out(31 downto 1)  := (32-13   downto 0 => d_in(31)) & d_in(7) & d_in(30 downto 25) & d_in(11 downto 8);
-            when 4 => d_out(31 downto 12) :=                                  d_in(31 downto 12);
-            when 5 => d_out(31 downto 1)  := (32-21   downto 0 => d_in(31)) & d_in(19 downto 12) & d_in(20) & d_in(30 downto 21);
-            when others => null;
-        end case;
-        return d_out;
-    end;
 begin
     control_unit: entity work.ControlUnit generic map (size) port map (
         clk, step_instruction, continue,
@@ -109,7 +94,7 @@ begin
     ex_code <= (c_signals.ex_code'range => c_signals.ex_code, others => ex_code_sign);
 
     ir_select: entity work.ImmediateDecoder
-        generic map (5, riscv_immediate)
+        generic map (5, work.firmware.immediate_decoder)
         port map (ir, ir_segment, c_signals.ir_offset, c_signals.ir_size, c_signals.se);
 
     state_mask: process(all)
