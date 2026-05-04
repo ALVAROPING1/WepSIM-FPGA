@@ -27,7 +27,8 @@ architecture behaviour of ByteSelector is
         variable buf: bytes'subtype := bytes;
     begin
         if not little_endian then
-            for i in 0 to size - 1 loop
+            for i in 0 to n_bytes - 1 loop
+                if i = size then exit; end if;
                 buf((size - i) * byte_size - 1 downto (size - i - 1) * byte_size)
                     := bytes((i + 1) * byte_size - 1 downto i * byte_size);
             end loop;
