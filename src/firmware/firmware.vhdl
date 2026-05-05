@@ -368,6 +368,8 @@ package firmware is
     );
     constant cu_start: ControlMemoryAddr := "111110000000";
 
+    constant little_endian: boolean := true;
+
     pure function immediate_decoder(id: natural; d_in: std_ulogic_vector) return std_ulogic_vector;
 end package;
 

@@ -59,7 +59,7 @@ begin
 
     -- vhdl_ls off
     ram: entity work.RAM
-        generic map (ram_types)
+        generic map (ram_types, little_endian => work.firmware.little_endian)
         port map (
             clk,
             control_bus.w, control_bus.r, control_bus.se, control_bus.bw,
