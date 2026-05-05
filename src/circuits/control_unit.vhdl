@@ -88,7 +88,9 @@ begin
         generic map (size, opcode_addr'high + 1, firmware.patterns, firmware.addrs)
         port map(instruction, opcode_addr, inst_exception);
 
-    addr_reg: entity work.Reg generic map(12) port map (clk, running, next_addr, addr);
+    addr_reg: entity work.Reg
+        generic map (12, initial => firmware.cu_start)
+        port map (clk, running, next_addr, addr);
 
     step_edge_detector: entity work.EdgeDetector port map (clk, step_instruction, step);
     running <= '1' when step = '1' or (inst.pause = '0' and (unsigned(addr) /= 0 or continue = '1')) else '0';

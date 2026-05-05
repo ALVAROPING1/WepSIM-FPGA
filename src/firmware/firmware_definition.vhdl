@@ -29,4 +29,5 @@ package firmware_types is
 
     subtype OpcodePatterns is std_ulogic_matrix(open)(31 downto 0);
     subtype OpcodeTable is std_ulogic_matrix(open)(11 downto 0);
+    subtype ControlMemoryAddr is std_ulogic_vector(11 downto 0);
 end package;

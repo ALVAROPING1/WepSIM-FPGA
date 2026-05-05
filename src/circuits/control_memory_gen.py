@@ -230,6 +230,88 @@ MEMORY: Final[list[str | int | MicroInstruction]] = [
 
     "illegal instruction",
     [("cond", "0000"), "b", ("sel_a", "00000"), ("sel_b", "00010"), ("sel_c", "01000"), ("ex_code", "0000"), "t11", "c4", "pause"], # jump to csw_rt1
+
+    0b111110000000,
+    "bootloader",
+    # Init
+    # x1 <- Load read addr
+    [("ex_code", "0001"), "t11", "c4"],
+    [("ex_code", "1000"), "t11", "c5"],
+    ["ma", ("mb", "01"), ("opcode", "00111"), "t6", "mr", "lc", ("sel_c", "00001")], # x1 <- 1 sll 8 = 0x0100
+    # Read segment header
+    [("ex_code", "0001"), "t11", "mr", "lc", ("sel_c", "11111")],      # setup return code
+    ["b", ("sel_a", "11111"), ("sel_b", "11000"), ("sel_c", "00000")], # read UART word
+    ["mr", "lc", ("sel_a", "00011"), ("sel_c", "00100"), "t9"],        # x4 <- x3 (addr)
+    [("ex_code", "0010"), "t11", "mr", "lc", ("sel_c", "11111")],      # setup return code
+    ["b", ("sel_a", "11111"), ("sel_b", "11000"), ("sel_c", "00000")], # read UART word
+    # x5 <- x3 * 4 (size)
+    ["mr", "lc", ("sel_a", "00011"), ("sel_c", "00101"), ("mb", "10"), ("opcode", "01100"), "t6"],
+    # if x4 == 0 && x5 == 0 (x4 | x5 == 0), stop loading
+    ["mr", ("sel_a", "00100"), ("sel_b", "00101"), ("opcode", "00010"), ("selp", "11"), "m7", "c7"],
+    [("cond", "0110"), ("sel_a", "11111"), ("sel_b", "00100"), ("sel_c", "10000")],
+    # Read segment
+    # do while x5 > 0
+        [("ex_code", "0000"), "t11", "mr", "lc", ("sel_c", "11110")],      # setup return code
+        ["b", ("sel_a", "11111"), ("sel_b", "10000"), ("sel_c", "00000")], # read UART byte
+        # MEM[x4] <- x3
+        ["mr", ("sel_a", "00100"), "t9", "c0"], # mar <- addr
+        [
+            "w", "t13", "t14", ("bw", "00"), # write to RAM
+            "mr", "lc", ("sel_a", "00100"), ("sel_c", "00100"), ("mb", "11"), ("opcode", "01010"), "t6", # x4 += 1 (addr)
+        ],
+        # x5 += -1
+        ["mr", "lc", ("sel_a", "00101"), ("sel_c", "00101"), ("mb", "11"), ("opcode", "01011"), "t6", ("selp", "11"), "m7", "c7"],
+        # if x5 != 0, loop
+        [("cond", "0110"), "b", ("sel_a", "11111"), ("sel_b", "00010"), ("sel_c", "11000")],
+    ["b", ("sel_a", "11111"), ("sel_b", "00000"), ("sel_c", "11000")], # Loop read segment header
+    # Stop loading
+    # Read entrypoint
+    [("ex_code", "0011"), "t11", "mr", "lc", ("sel_c", "11111")],      # setup return code
+    ["b", ("sel_a", "11111"), ("sel_b", "11000"), ("sel_c", "00000")], # read UART word
+    [
+        "mr", ("sel_a", "00011"), "t9", "c2", # pc <- x3 (entrypoint)
+        "b", "a0", # Start running user code
+    ],
+
+    # read byte, store result in mbr
+    0b111111000000,
+    "read_byte_uart",
+    [("ex_code", "0000"), "t11", "c4", "c1", ("selp", "11"), "m7", "c7"], # reset flag registers
+    ["mr", ("sel_a", "00001"), ("mb", "10"), ("opcode", "01010"), "t6", "c0"], # mar <- read status addr
+    ["t13", "ior", "m1", "c1", "t1", "c4", "ma", ("mb", "11"), ("opcode", "00001"), ("selp", "11"), "m7", "c7", ("cond", "0110"), ("sel_a", "11111"), ("sel_b", "10000"), ("sel_c", "10000")], # Spin lock
+    ["mr", ("sel_a", "00001"), "t9", "c0"], # mar <- read addr
+    ["t13", "ior", "m1", "c1"], # mbr <- UART byte
+    # select return maddr based on x30
+    # if x30 | 0 == 0 return to read section byte
+    ["mr", ("sel_a", "11110"), ("opcode", "00010"), ("selp", "11"), "m7", "c7"],
+    [("cond", "0110"), ("sel_a", "11111"), ("sel_b", "00011"), ("sel_c", "01000")],
+    # else return to read word byte
+    ["b", ("sel_a", "11111"), ("sel_b", "11001"), ("sel_c", "00000")],
+
+    # read word in little endian. Store result in x3
+    0b111111100000,
+    "read_word_uart",
+    [("ex_code", "0100"), "t11", "mr", "lc", ("sel_c", "00010")], # x2 <- 4 (counter)
+    [("ex_code", "0000"), "t11", "mr", "lc", ("sel_c", "00011")], # x3 <- 0 (word buf)
+    # do while x2 > 0
+        [("ex_code", "0001"), "t11", "mr", "lc", ("sel_c", "11110")],      # setup return code
+        ["b", ("sel_a", "11111"), ("sel_b", "10000"), ("sel_c", "00000")], # read UART byte
+        ["t1", "c4"], # rt1 <- UART byte
+        # add byte to accumulator (x3 <- (x3 | byte) ror 8)
+        ["mr", "ma", ("sel_b", "00011"), ("opcode", "00010"), "t6", "c4"], # rt1 <- x3 | byte
+        ["ma", ("mb", "01"), ("opcode", "01000"), "t6", "mr", "lc", ("sel_c", "00011")], # x3 <- rt1 ror 8
+        ["mr", "lc", ("sel_a", "00010"), ("sel_c", "00010"), ("mb", "11"), ("opcode", "01011"), "t6", ("selp", "11"), "m7", "c7"], # x2 += -1
+        # if x2 != 0, loop
+        [("cond", "0110"), "b", ("sel_a", "11111"), ("sel_b", "11000"), ("sel_c", "10000")],
+    # select return maddr based on x31
+    # if x31 - 1 == 0 (x31 == 1) return to read section addr
+    ["mr", "lc", ("sel_a", "11111"), ("sel_c", "11111"), ("mb", "11"), ("opcode", "01011"), "t6", ("selp", "11"), "m7", "c7"],
+    [("cond", "0110"), ("sel_a", "11111"), ("sel_b", "00001"), ("sel_c", "01000")],
+    # if x31 - 2 == 0 (x31 == 2) return to read section size
+    ["mr", "lc", ("sel_a", "11111"), ("sel_c", "11111"), ("mb", "11"), ("opcode", "01011"), "t6", ("selp", "11"), "m7", "c7"],
+    [("cond", "0110"), ("sel_a", "11111"), ("sel_b", "00010"), ("sel_c", "00000")],
+    # else return to read entry point
+    ["b", ("sel_a", "11111"), ("sel_b", "00101"), ("sel_c", "00000")],
 ]  # fmt: skip
 
 INDENTATION: Final[int] = 8
@@ -301,7 +383,7 @@ for inst in MEMORY:
     curr = NULL_MICROINSTRUCTION.copy()
     for signal in inst:
         name, value = (signal, True) if isinstance(signal, str) else signal
-        if name[0] in "ct" and re.match(r"\d+", name[1:]):
+        if re.match(r"^[ct]\d+$", name):
             off = 0 if name[0] == "c" else 1
             idx = int(name[1:]) - off
             name = name[0]
