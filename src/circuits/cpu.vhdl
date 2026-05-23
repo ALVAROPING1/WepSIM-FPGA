@@ -57,31 +57,31 @@ begin
             negative => alu_state(1), zero => alu_state(0)
         );
 
-    mar_reg: entity work.Reg generic map(size) port map (clk, c_signals.c(0), internal_bus, mar);
-    mbr_reg: entity work.Reg generic map(size) port map (clk, c_signals.c(1), memory, mbr);
-    pc_reg:  entity work.Reg generic map(size, initial => kernel_start) port map (clk, c_signals.c(2), next_pc, pc);
-    ir_reg:  entity work.Reg generic map(size) port map (clk, c_signals.c(3), internal_bus, ir);
-    rt1:     entity work.Reg generic map(size) port map (clk, c_signals.c(4), internal_bus, rt(1));
-    rt2:     entity work.Reg generic map(size) port map (clk, c_signals.c(5), internal_bus, rt(2));
-    rt3:     entity work.Reg generic map(size) port map (clk, c_signals.c(6), res, rt(3));
-    sr_reg:  entity work.Reg generic map(size) port map (clk, c_signals.c(7), state, sr);
-    clk_reg: entity work.Reg generic map(size) port map (clk, '1', word(unsigned(cycles) + 1), cycles);
-    ins_reg: entity work.Reg generic map(size) port map (clk, c_signals.instruction_finish, word(unsigned(instructions) + 1), instructions);
+    mar_reg: entity work.Reg generic map (size) port map (clk, c_signals.c(0), internal_bus, mar);
+    mbr_reg: entity work.Reg generic map (size) port map (clk, c_signals.c(1), memory, mbr);
+    pc_reg:  entity work.Reg generic map (size, initial => kernel_start) port map (clk, c_signals.c(2), next_pc, pc);
+    ir_reg:  entity work.Reg generic map (size) port map (clk, c_signals.c(3), internal_bus, ir);
+    rt1:     entity work.Reg generic map (size) port map (clk, c_signals.c(4), internal_bus, rt(1));
+    rt2:     entity work.Reg generic map (size) port map (clk, c_signals.c(5), internal_bus, rt(2));
+    rt3:     entity work.Reg generic map (size) port map (clk, c_signals.c(6), res, rt(3));
+    sr_reg:  entity work.Reg generic map (size) port map (clk, c_signals.c(7), state, sr);
+    clk_reg: entity work.Reg generic map (size) port map (clk, '1', word(unsigned(cycles) + 1), cycles);
+    ins_reg: entity work.Reg generic map (size) port map (clk, c_signals.instruction_finish, word(unsigned(instructions) + 1), instructions);
 
-    ta:      entity work.TriState generic map(size) port map (mar, address_bus, c_signals.ta);
-    td:      entity work.TriState generic map(size) port map (mbr, data_bus, c_signals.td);
-    t1:      entity work.TriState generic map(size) port map (mbr, internal_bus, c_signals.t(1));
-    t2:      entity work.TriState generic map(size) port map (pc, internal_bus, c_signals.t(2));
-    t3:      entity work.TriState generic map(size) port map (ir_segment, internal_bus, c_signals.t(3));
-    t4:      entity work.TriState generic map(size) port map (rt(1), internal_bus, c_signals.t(4));
-    t5:      entity work.TriState generic map(size) port map (rt(2), internal_bus, c_signals.t(5));
-    t6:      entity work.TriState generic map(size) port map (res, internal_bus, c_signals.t(6));
-    t7:      entity work.TriState generic map(size) port map (rt(3), internal_bus, c_signals.t(7));
-    t8:      entity work.TriState generic map(size) port map (sr, internal_bus, c_signals.t(8));
-    t9:      entity work.TriState generic map(size) port map (a, internal_bus, c_signals.t(9));
-    t10:     entity work.TriState generic map(size) port map (b, internal_bus, c_signals.t(10));
-    t11:     entity work.TriState generic map(size) port map (excode, internal_bus, c_signals.t(11));
-    t12:     entity work.TriState generic map(size) port map (hpc, internal_bus, c_signals.t(12));
+    ta:      entity work.TriState generic map (size) port map (mar, address_bus, c_signals.ta);
+    td:      entity work.TriState generic map (size) port map (mbr, data_bus, c_signals.td);
+    t1:      entity work.TriState generic map (size) port map (mbr, internal_bus, c_signals.t(1));
+    t2:      entity work.TriState generic map (size) port map (pc, internal_bus, c_signals.t(2));
+    t3:      entity work.TriState generic map (size) port map (ir_segment, internal_bus, c_signals.t(3));
+    t4:      entity work.TriState generic map (size) port map (rt(1), internal_bus, c_signals.t(4));
+    t5:      entity work.TriState generic map (size) port map (rt(2), internal_bus, c_signals.t(5));
+    t6:      entity work.TriState generic map (size) port map (res, internal_bus, c_signals.t(6));
+    t7:      entity work.TriState generic map (size) port map (rt(3), internal_bus, c_signals.t(7));
+    t8:      entity work.TriState generic map (size) port map (sr, internal_bus, c_signals.t(8));
+    t9:      entity work.TriState generic map (size) port map (a, internal_bus, c_signals.t(9));
+    t10:     entity work.TriState generic map (size) port map (b, internal_bus, c_signals.t(10));
+    t11:     entity work.TriState generic map (size) port map (excode, internal_bus, c_signals.t(11));
+    t12:     entity work.TriState generic map (size) port map (hpc, internal_bus, c_signals.t(12));
 
     mux_a:   entity work.Multiplexer generic map (size, 1) port map ((a, rt(1)), alu_a, sel(0) => c_signals.ma);
     mux_b:   entity work.Multiplexer generic map (size, 2) port map ((b, rt(2), "00000000000000000000000000000100",  "00000000000000000000000000000001"), alu_b, c_signals.mb);
