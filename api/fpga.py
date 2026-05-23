@@ -1,5 +1,3 @@
-import sys
-from argparse import ArgumentParser
 from pyfpga.vivado import Vivado
 
 prj = Vivado("vhdl", odir="build")
@@ -16,6 +14,9 @@ with open("src/clk_divider.tcl", "r") as f:
     prj.add_hook("postcfg", f.read())
 
 if __name__ == "__main__":
+    import sys
+    from argparse import ArgumentParser
+
     parser = ArgumentParser(exit_on_error=True)
     parser.add_argument(
         "--compile",
