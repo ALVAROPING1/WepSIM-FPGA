@@ -5,6 +5,7 @@ use work.firmware_types.all;
 
 package firmware is
     constant control_memory: ControlMemoryROM := (
+        -- fetch
         0 => (cond => "0000", b => '0', a0 => '0', mr => '1', sel_a => "00000", sel_b => "00000", sel_c => "00000", lc => '1', t => "00000000001000", c => "00000000", ma => '0', m1 => '0', m2 => '0', m7 => '0', mh => '0', mb => "00", opcode => "00000", se => '0', ir_size => "00000", ir_offset => "00000", bw => "00", w => '0', r => '0', iow => '0', ior => '0', inta => '0', selp => "00", interrupts => '0', user => '0', ex_code => "0000", pause => '0'),
         1 => (cond => "0001", b => '0', a0 => '0', mr => '0', sel_a => "00000", sel_b => "00001", sel_c => "11000", lc => '0', t => "00000000000000", c => "00000000", ma => '0', m1 => '0', m2 => '0', m7 => '0', mh => '0', mb => "00", opcode => "00000", se => '0', ir_size => "00000", ir_offset => "00000", bw => "00", w => '0', r => '0', iow => '0', ior => '0', inta => '0', selp => "00", interrupts => '0', user => '0', ex_code => "0000", pause => '0'),
         2 => (cond => "0000", b => '0', a0 => '0', mr => '0', sel_a => "00000", sel_b => "00000", sel_c => "00000", lc => '0', t => "01000000000000", c => "10000000", ma => '0', m1 => '0', m2 => '0', m7 => '0', mh => '0', mb => "00", opcode => "00000", se => '0', ir_size => "00000", ir_offset => "00000", bw => "00", w => '0', r => '0', iow => '0', ior => '0', inta => '0', selp => "00", interrupts => '0', user => '0', ex_code => "0000", pause => '0'),
@@ -370,12 +371,13 @@ package firmware is
 
     constant little_endian: boolean := true;
 
-    pure function immediate_decoder(id: natural; d_in: std_ulogic_vector) return std_ulogic_vector;
+    pure function immediate_decoder(id: natural; d_in: std_ulogic_vector)
+        return std_ulogic_vector;
 end package;
 
 package body firmware is
     pure function immediate_decoder(id: natural; d_in: std_ulogic_vector)
-    return std_ulogic_vector is
+        return std_ulogic_vector is
     begin
         case id is
             when 1 => return (d_in'high - 12 downto 0 => d_in(31)) & d_in(31 downto 20);
