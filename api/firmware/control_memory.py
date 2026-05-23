@@ -10,11 +10,13 @@ FIELD_SIZE: Final[MicroInstruction] = {
     "b": 1,
     "a0": 1,
     "mr": 1,
-    "sel_a": 5,
-    "sel_b": 5,
-    "sel_c": 5,
+    "sela": 5,
+    "selb": 5,
+    "selc": 5,
     "lc": 1,
-    "t": 14,
+    "t": 12,
+    "ta": 1,
+    "td": 1,
     "c": 8,
     "ma": 1,
     "m1": 1,
@@ -22,10 +24,10 @@ FIELD_SIZE: Final[MicroInstruction] = {
     "m7": 1,
     "mh": 1,
     "mb": 2,
-    "opcode": 5,
+    "cop": 5,
     "se": 1,
-    "ir_size": 5,
-    "ir_offset": 5,
+    "size": 5,
+    "offset": 5,
     "bw": 2,
     "w": 1,
     "r": 1,
@@ -33,9 +35,9 @@ FIELD_SIZE: Final[MicroInstruction] = {
     "ior": 1,
     "inta": 1,
     "selp": 2,
-    "interrupts": 1,
-    "user": 1,
-    "ex_code": 4,
+    "i": 1,
+    "u": 1,
+    "excode": 4,
     "pause": 1,
 }
 
@@ -62,9 +64,9 @@ def parse_microinstruction(inst: dict[str, int]) -> MicroInstruction:
     for name, value in inst.items():
         name = name.lower()
         if name == "maddr":
-            curr["sel_a"] = (value >> 7) & 0x1F
-            curr["sel_b"] = (value >> 2) & 0x1F
-            curr["sel_c"] = (value & 0b11) << 3
+            curr["sela"] = (value >> 7) & 0x1F
+            curr["selb"] = (value >> 2) & 0x1F
+            curr["selc"] = (value & 0b11) << 3
             continue
         if re.match(r"^[ct]\d+$", name):
             off = int(name[0] == "t")
@@ -72,6 +74,8 @@ def parse_microinstruction(inst: dict[str, int]) -> MicroInstruction:
             name = name[0]
             size = FIELD_SIZE[name]
             value = curr[name] | (1 << (size - idx - 1))
+        elif name == "c":
+            name = "cond"
         elif name not in curr:
             print("Unknown field name:", name)
             continue

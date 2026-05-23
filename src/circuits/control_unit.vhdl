@@ -6,16 +6,17 @@ package cpu_pkg is
     type control_signals is record
         lc: std_ulogic;
         ra, rb, rc: unsigned(4 downto 0);
-        t: std_ulogic_vector(1 to 14);
+        t: std_ulogic_vector(1 to 12);
+        ta, td: std_ulogic;
         c: std_ulogic_vector(0 to 7);
         ma, m1, m2, m7, mh: std_ulogic;
         mb: unsigned(1 downto 0);
-        opcode: std_ulogic_vector(4 downto 0);
+        cop: std_ulogic_vector(4 downto 0);
         se: std_ulogic;
-        ir_size, ir_offset: unsigned(4 downto 0);
+        size, offset: unsigned(4 downto 0);
         selp: std_ulogic_vector(1 downto 0);
         interrupts, user: std_ulogic;
-        ex_code: std_ulogic_vector(3 downto 0);
+        excode: std_ulogic_vector(3 downto 0);
         instruction_finish: std_ulogic;
     end record;
 
@@ -54,6 +55,8 @@ begin
     inst <= firmware.control_memory(to_integer(unsigned(addr)));
     control.lc <= inst.lc;
     control.t <= inst.t;
+    control.ta <= inst.ta;
+    control.td <= inst.td;
     control.c <= inst.c;
     control.ma <= inst.ma;
     control.m1 <= inst.m1;
@@ -61,14 +64,14 @@ begin
     control.m7 <= inst.m7;
     control.mh <= inst.mh;
     control.mb <= inst.mb;
-    control.opcode <= inst.opcode;
+    control.cop <= inst.cop;
     control.se <= inst.se;
-    control.ir_size <= inst.ir_size;
-    control.ir_offset <= inst.ir_offset;
+    control.size <= inst.size;
+    control.offset <= inst.offset;
     control.selp <= inst.selp;
-    control.interrupts <= inst.interrupts;
-    control.user <= inst.user;
-    control.ex_code <= inst.ex_code;
+    control.interrupts <= inst.i;
+    control.user <= inst.u;
+    control.excode <= inst.excode;
 
     fetch <= '1' when unsigned(addr) = 0 else '0';
     inst_end: entity work.EdgeDetector port map (clk, fetch, control.instruction_finish);
@@ -82,7 +85,7 @@ begin
     control_bus.bw <= inst.bw;
     control_bus.running <= running;
 
-    maddr <= std_ulogic_vector(inst.sel_a & inst.sel_b & inst.sel_c(4 downto 3));
+    maddr <= std_ulogic_vector(inst.sela & inst.selb & inst.selc(4 downto 3));
 
     decoder: entity work.OpcodeDecoder
         generic map (size, opcode_addr'high + 1, firmware.patterns, firmware.addrs)
@@ -116,13 +119,13 @@ begin
         sel => inst.cond
     );
 
-    sel_ra: entity work.Slicer generic map (5, 5) port map (instruction, sel_ra_imm, inst.sel_a);
-    sel_rb: entity work.Slicer generic map (5, 5) port map (instruction, sel_rb_imm, inst.sel_b);
-    sel_rc: entity work.Slicer generic map (5, 5) port map (instruction, sel_rc_imm, inst.sel_c);
+    sel_ra: entity work.Slicer generic map (5, 5) port map (instruction, sel_ra_imm, inst.sela);
+    sel_rb: entity work.Slicer generic map (5, 5) port map (instruction, sel_rb_imm, inst.selb);
+    sel_rc: entity work.Slicer generic map (5, 5) port map (instruction, sel_rc_imm, inst.selc);
 
-    mux_ra: entity work.Multiplexer generic map (5, 1) port map ((sel_ra_imm, std_ulogic_vector(inst.sel_a)), ra, sel(0) => inst.mr);
-    mux_rb: entity work.Multiplexer generic map (5, 1) port map ((sel_rb_imm, std_ulogic_vector(inst.sel_b)), rb, sel(0) => inst.mr);
-    mux_rc: entity work.Multiplexer generic map (5, 1) port map ((sel_rc_imm, std_ulogic_vector(inst.sel_c)), rc, sel(0) => inst.mr);
+    mux_ra: entity work.Multiplexer generic map (5, 1) port map ((sel_ra_imm, std_ulogic_vector(inst.sela)), ra, sel(0) => inst.mr);
+    mux_rb: entity work.Multiplexer generic map (5, 1) port map ((sel_rb_imm, std_ulogic_vector(inst.selb)), rb, sel(0) => inst.mr);
+    mux_rc: entity work.Multiplexer generic map (5, 1) port map ((sel_rc_imm, std_ulogic_vector(inst.selc)), rc, sel(0) => inst.mr);
     control.ra <= unsigned(ra);
     control.rb <= unsigned(rb);
     control.rc <= unsigned(rc);

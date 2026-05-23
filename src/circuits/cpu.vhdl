@@ -27,11 +27,11 @@ architecture behaviour of Cpu is
 
     signal internal_bus: std_logic_vector(size - 1 downto 0);
     type word_vector is array (natural range <>) of word;
-    signal a, b, c, alu_a, alu_b, res, mar, mbr, pc, next_pc, ir, ir_segment, sr, state, next_state, memory, cycles, hpc, instructions, ex_code: word;
+    signal a, b, c, alu_a, alu_b, res, mar, mbr, pc, next_pc, ir, ir_segment, sr, state, next_state, memory, cycles, hpc, instructions, excode: word;
     signal rt: word_vector(1 to 3);
     signal alu_state: std_ulogic_vector(3 downto 0);
     signal c_signals: control_signals;
-    signal ex_code_sign: std_ulogic;
+    signal excode_sign: std_ulogic;
 begin
     control_unit: entity work.ControlUnit generic map (size) port map (
         clk, step_instruction, continue,
@@ -52,7 +52,7 @@ begin
     alu: entity work.ALU
         generic map (size)
         port map(
-            alu_a, alu_b, c_signals.opcode, res,
+            alu_a, alu_b, c_signals.cop, res,
             carry => alu_state(3), overflow => alu_state(2),
             negative => alu_state(1), zero => alu_state(0)
         );
@@ -68,8 +68,8 @@ begin
     clk_reg: entity work.Reg generic map(size) port map (clk, '1', word(unsigned(cycles) + 1), cycles);
     ins_reg: entity work.Reg generic map(size) port map (clk, c_signals.instruction_finish, word(unsigned(instructions) + 1), instructions);
 
-    ta:      entity work.TriState generic map(size) port map (mar, address_bus, c_signals.t(13));
-    td:      entity work.TriState generic map(size) port map (mbr, data_bus, c_signals.t(14));
+    ta:      entity work.TriState generic map(size) port map (mar, address_bus, c_signals.ta);
+    td:      entity work.TriState generic map(size) port map (mbr, data_bus, c_signals.td);
     t1:      entity work.TriState generic map(size) port map (mbr, internal_bus, c_signals.t(1));
     t2:      entity work.TriState generic map(size) port map (pc, internal_bus, c_signals.t(2));
     t3:      entity work.TriState generic map(size) port map (ir_segment, internal_bus, c_signals.t(3));
@@ -80,7 +80,7 @@ begin
     t8:      entity work.TriState generic map(size) port map (sr, internal_bus, c_signals.t(8));
     t9:      entity work.TriState generic map(size) port map (a, internal_bus, c_signals.t(9));
     t10:     entity work.TriState generic map(size) port map (b, internal_bus, c_signals.t(10));
-    t11:     entity work.TriState generic map(size) port map (ex_code, internal_bus, c_signals.t(11));
+    t11:     entity work.TriState generic map(size) port map (excode, internal_bus, c_signals.t(11));
     t12:     entity work.TriState generic map(size) port map (hpc, internal_bus, c_signals.t(12));
 
     mux_a:   entity work.Multiplexer generic map (size, 1) port map ((a, rt(1)), alu_a, sel(0) => c_signals.ma);
@@ -90,12 +90,12 @@ begin
     mux7:    entity work.Multiplexer generic map (size, 1) port map ((internal_bus, next_state), state, sel(0) => c_signals.m7);
     mux_mh:  entity work.Multiplexer generic map (size, 1) port map ((cycles, instructions), hpc, sel(0) => c_signals.mh);
 
-    ex_code_sign <= c_signals.ex_code(c_signals.ex_code'high) when c_signals.se else '0';
-    ex_code <= (c_signals.ex_code'range => c_signals.ex_code, others => ex_code_sign);
+    excode_sign <= c_signals.excode(c_signals.excode'high) when c_signals.se else '0';
+    excode <= (c_signals.excode'range => c_signals.excode, others => excode_sign);
 
     ir_select: entity work.ImmediateDecoder
         generic map (5, work.firmware.immediate_decoder)
-        port map (ir, ir_segment, c_signals.ir_offset, c_signals.ir_size, c_signals.se);
+        port map (ir, ir_segment, c_signals.offset, c_signals.size, c_signals.se);
 
     state_mask: process(all)
     begin
