@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Final
 
 from firmware.control_memory import MicroProgram, binary, microcode_gen
 from firmware.immediate_decoder import Encoding, decoder_gen
@@ -15,7 +15,7 @@ class Firmware:
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "Firmware":
         encodings = [Encoding(**x) for x in data["encodings"]]
-        microprograms = [MicroProgram(**x) for x in data["microprograms"]]
+        microprograms = [MicroProgram(**x) for x in data["microprograms"]] + BOOTLOADER
         return cls(encodings, microprograms, data["endianness"], data["start"])
 
     def gen(self) -> str:
@@ -54,6 +54,90 @@ package body firmware is
     {decoder_header} {decoder_body}
 end package body;"""
 
+
+BOOTLOADER: Final[list[MicroProgram]] = [
+    MicroProgram("bootloader", None, 0b111110000000, [
+        # Init
+        # x1 <- Load read addr
+        {"excode": 1, "t11": 1, "c4": 1},
+        {"excode": 8, "t11": 1, "c5": 1},
+        {"ma": 1, "mb": 0b01, "cop": 0b00111, "t6": 1, "mr": 1, "lc": 1, "selc": 1}, # x1 <- 1 sll 8
+        # Read segment header
+        {"excode": 1, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
+        {"b": 1, "maddr": 0b111111100000},                     # read UART word
+        {"mr": 1, "lc": 1, "sela": 3, "selc": 4, "t9": 1},     # x4 <- x3 (addr)
+        {"excode": 2, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
+        {"b": 1, "maddr": 0b111111100000},                     # read UART word
+        # x5 <- x3 * 4 (size)
+        {"mr": 1, "lc": 1, "sela": 3, "selc": 5, "mb": 0b10, "cop": 0b01100, "t6": 1},
+        # if x4 == 0 && x5 == 0 (x4 | x5 == 0), stop loading
+        {"mr": 1, "sela": 4, "selb": 5, "cop": 0b00010, "selp": 0b11, "m7": 1, "c7": 1},
+        {"cond": 6, "maddr": 0b111110010010},
+        # Read segment
+        # do while x5 > 0
+            {"excode": 0, "t11": 1, "mr": 1, "lc": 1, "selc": 30}, # setup return code
+            {"b": 1, "maddr": 0b111111000000},                     # read UART byte
+            # MEM[x4++] <- x3
+            {"mr": 1, "sela": 4, "t9": 1, "c0": 1}, # mar <- addr
+            {
+                "w": 1, "ta": 1, "td": 1, "bw": 0b00, # write to RAM
+                "mr": 1, "lc": 1, "sela": 4, "selc": 4, "mb": 0b11, "cop": 0b01010, "t6": 1, # x4 += 1 (addr)
+            },
+            # x5 += -1
+            {"mr": 1, "lc": 1, "sela": 5, "selc": 5, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
+            # if x5 != 0, loop
+            {"cond": 6, "b": 1, "maddr": 0b111110001011},
+        {"b": 1, "maddr": 0b111110000011}, # Loop read segment header
+        # Stop loading
+        # Read entrypoint
+        {"excode": 3, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
+        {"b": 1, "maddr": 0b111111100000},                     # read UART word
+        {
+            "mr": 1, "sela": 3, "t9": 1, "c2": 1, # pc <- x3 (entrypoint)
+            "b": 1, "a0": 1, # Start running user code
+        }
+    ]),
+
+    # read byte, store result in mbr
+    MicroProgram("read_byte_uart", None, 0b111111000000, [
+        {"excode": 0, "t11": 1, "c4": 1, "c1": 1, "selp": 0b11, "m7": 1, "c7": 1}, # reset flag registers
+        {"mr": 1, "sela": 1, "mb": 0b10, "cop": 0b01010, "t6": 1, "c0": 1},        # mar <- read status addr
+        {"ta": 1, "ior": 1, "m1": 1, "c1": 1, "t1": 1, "c4": 1, "ma": 1, "mb": 0b11, "cop": 0b00001, "selp": 0b11, "m7": 1, "c7": 1, "cond": 6, "maddr": 0b111111000010}, # Spin lock
+        {"mr": 1, "sela": 1, "t9": 1, "c0": 1}, # mar <- read addr
+        {"ta": 1, "ior": 1, "m1": 1, "c1": 1},  # mbr <- UART byte
+        # select return maddr based on x30
+        # if x30 | 0 == 0 return to read section byte
+        {"mr": 1, "sela": 30, "cop": 0b00010, "selp": 0b11, "m7": 1, "c7": 1},
+        {"cond": 6, "maddr": 0b111110001101},
+        # else return to read word byte
+        {"b": 1, "maddr": 0b111111100100}
+    ]),
+
+    # read word in little endian. Store result in x3
+    MicroProgram("read_word_uart", None, 0b111111100000, [
+        {"excode": 4, "t11": 1, "mr": 1, "lc": 1, "selc": 2}, # x2 <- 4 (counter)
+        {"excode": 0, "t11": 1, "mr": 1, "lc": 1, "selc": 3}, # x3 <- 0 (word buf)
+        # do while x2 > 0
+            {"excode": 1, "t11": 1, "mr": 1, "lc": 1, "selc": 30}, # setup return code
+            {"b": 1, "maddr": 0b111111000000},                     # read UART byte
+            {"t1": 1, "c4": 1}, # rt1 <- UART byte
+            # add byte to accumulator (x3 <- (x3 | byte) ror 8)
+            {"mr": 1, "ma": 1, "selb": 3, "cop": 0b00010, "t6": 1, "c4": 1},             # rt1 <- x3 | byte
+            {"ma": 1, "mb": 0b01, "cop": 0b01000, "t6": 1, "mr": 1, "lc": 1, "selc": 3}, # x3 <- rt1 ror 8
+            {"mr": 1, "lc": 1, "sela": 2, "selc": 2, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1}, # x2 += -1
+            # if x2 != 0, loop
+            {"cond": 6, "b": 1, "maddr": 0b111111100010},
+        # select return maddr based on x31
+        # if x31 - 1 == 0 (x31 == 1) return to read section addr
+        {"mr": 1, "lc": 1, "sela": 31, "selc": 31, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
+        {"cond": 6, "maddr": 0b111110000101},
+        # if x31 - 2 == 0 (x31 == 2) return to read section size
+        {"mr": 1, "lc": 1, "sela": 31, "selc": 31, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
+        {"cond": 6, "maddr": 0b111110001000},
+        # else return to read entry point
+        {"b": 1, "maddr": 0b111110010100}
+    ]),
+]  # fmt: skip
 
 if __name__ == "__main__":
     microprograms = [
@@ -329,91 +413,8 @@ if __name__ == "__main__":
         ("illegal instruction", "--------------------------------", 2188, [
             {"cond": 0, "b": 1, "maddr": 9, "excode": 0, "t11": 1, "c4": 1, "pause": 1}
         ]),
-
-        # Bootloader
-        ("bootloader", None, 0b111110000000, [
-            # Init
-            # x1 <- Load read addr
-            {"excode": 1, "t11": 1, "c4": 1},
-            {"excode": 8, "t11": 1, "c5": 1},
-            {"ma": 1, "mb": 0b01, "cop": 0b00111, "t6": 1, "mr": 1, "lc": 1, "selc": 1}, # x1 <- 1 sll 8
-            # Read segment header
-            {"excode": 1, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
-            {"b": 1, "maddr": 0b111111100000},                     # read UART word
-            {"mr": 1, "lc": 1, "sela": 3, "selc": 4, "t9": 1},     # x4 <- x3 (addr)
-            {"excode": 2, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
-            {"b": 1, "maddr": 0b111111100000},                     # read UART word
-            # x5 <- x3 * 4 (size)
-            {"mr": 1, "lc": 1, "sela": 3, "selc": 5, "mb": 0b10, "cop": 0b01100, "t6": 1},
-            # if x4 == 0 && x5 == 0 (x4 | x5 == 0), stop loading
-            {"mr": 1, "sela": 4, "selb": 5, "cop": 0b00010, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 6, "maddr": 0b111110010010},
-            # Read segment
-            # do while x5 > 0
-                {"excode": 0, "t11": 1, "mr": 1, "lc": 1, "selc": 30}, # setup return code
-                {"b": 1, "maddr": 0b111111000000},                     # read UART byte
-                # MEM[x4++] <- x3
-                {"mr": 1, "sela": 4, "t9": 1, "c0": 1}, # mar <- addr
-                {
-                    "w": 1, "ta": 1, "td": 1, "bw": 0b00, # write to RAM
-                    "mr": 1, "lc": 1, "sela": 4, "selc": 4, "mb": 0b11, "cop": 0b01010, "t6": 1, # x4 += 1 (addr)
-                },
-                # x5 += -1
-                {"mr": 1, "lc": 1, "sela": 5, "selc": 5, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
-                # if x5 != 0, loop
-                {"cond": 6, "b": 1, "maddr": 0b111110001011},
-            {"b": 1, "maddr": 0b111110000011}, # Loop read segment header
-            # Stop loading
-            # Read entrypoint
-            {"excode": 3, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
-            {"b": 1, "maddr": 0b111111100000},                     # read UART word
-            {
-                "mr": 1, "sela": 3, "t9": 1, "c2": 1, # pc <- x3 (entrypoint)
-                "b": 1, "a0": 1, # Start running user code
-            }
-        ]),
-
-        # read byte, store result in mbr
-        ("read_byte_uart", None, 0b111111000000, [
-            {"excode": 0, "t11": 1, "c4": 1, "c1": 1, "selp": 0b11, "m7": 1, "c7": 1}, # reset flag registers
-            {"mr": 1, "sela": 1, "mb": 0b10, "cop": 0b01010, "t6": 1, "c0": 1},        # mar <- read status addr
-            {"ta": 1, "ior": 1, "m1": 1, "c1": 1, "t1": 1, "c4": 1, "ma": 1, "mb": 0b11, "cop": 0b00001, "selp": 0b11, "m7": 1, "c7": 1, "cond": 6, "maddr": 0b111111000010}, # Spin lock
-            {"mr": 1, "sela": 1, "t9": 1, "c0": 1}, # mar <- read addr
-            {"ta": 1, "ior": 1, "m1": 1, "c1": 1},  # mbr <- UART byte
-            # select return maddr based on x30
-            # if x30 | 0 == 0 return to read section byte
-            {"mr": 1, "sela": 30, "cop": 0b00010, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 6, "maddr": 0b111110001101},
-            # else return to read word byte
-            {"b": 1, "maddr": 0b111111100100}
-        ]),
-
-        # read word in little endian. Store result in x3
-        ("read_word_uart", None, 0b111111100000, [
-            {"excode": 4, "t11": 1, "mr": 1, "lc": 1, "selc": 2}, # x2 <- 4 (counter)
-            {"excode": 0, "t11": 1, "mr": 1, "lc": 1, "selc": 3}, # x3 <- 0 (word buf)
-            # do while x2 > 0
-                {"excode": 1, "t11": 1, "mr": 1, "lc": 1, "selc": 30}, # setup return code
-                {"b": 1, "maddr": 0b111111000000},                     # read UART byte
-                {"t1": 1, "c4": 1}, # rt1 <- UART byte
-                # add byte to accumulator (x3 <- (x3 | byte) ror 8)
-                {"mr": 1, "ma": 1, "selb": 3, "cop": 0b00010, "t6": 1, "c4": 1},             # rt1 <- x3 | byte
-                {"ma": 1, "mb": 0b01, "cop": 0b01000, "t6": 1, "mr": 1, "lc": 1, "selc": 3}, # x3 <- rt1 ror 8
-                {"mr": 1, "lc": 1, "sela": 2, "selc": 2, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1}, # x2 += -1
-                # if x2 != 0, loop
-                {"cond": 6, "b": 1, "maddr": 0b111111100010},
-            # select return maddr based on x31
-            # if x31 - 1 == 0 (x31 == 1) return to read section addr
-            {"mr": 1, "lc": 1, "sela": 31, "selc": 31, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 6, "maddr": 0b111110000101},
-            # if x31 - 2 == 0 (x31 == 2) return to read section size
-            {"mr": 1, "lc": 1, "sela": 31, "selc": 31, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 6, "maddr": 0b111110001000},
-            # else return to read entry point
-            {"b": 1, "maddr": 0b111110010100}
-        ]),
     ]  # fmt: skip
-    microprograms = [MicroProgram(*x) for x in microprograms]
+    microprograms = [MicroProgram(*x) for x in microprograms] + BOOTLOADER
 
     encodings = [
         Encoding(False, 32, []),
