@@ -12,7 +12,7 @@ prj.add_hook(
     "postcfg",
     "set_property file_type {VHDL 2019} [get_files -filter {FILE_TYPE == VHDL}]",
 )
-with open("clk_divider.tcl", "r") as f:
+with open("src/clk_divider.tcl", "r") as f:
     prj.add_hook("postcfg", f.read())
 
 if __name__ == "__main__":
