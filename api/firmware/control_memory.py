@@ -1,6 +1,14 @@
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Final, Iterable, Optional, TypeAlias
+from typing import Final, Optional, TypeAlias, cast
+
+from typing_extensions import TypedDict
+
+
+class UserMicroInstruction(TypedDict, total=False, extra_items=int):
+    maddr: str | int
+
 
 MicroInstruction: TypeAlias = dict[str, int]
 Lines: TypeAlias = list[str]
@@ -47,7 +55,7 @@ class MicroProgram:
     name: str
     pattern: Optional[str]
     start: int
-    microcode: list[dict[str, int]]
+    microcode: list[UserMicroInstruction | str]
 
 
 def binary(x: int, size: int) -> str:
@@ -59,11 +67,15 @@ def null_microinstruction():
     return {k: 0 for k in FIELD_SIZE.keys()}
 
 
-def parse_microinstruction(inst: dict[str, int]) -> MicroInstruction:
+def parse_microinstruction(
+    inst: UserMicroInstruction, labels: dict[str, int]
+) -> MicroInstruction:
     curr = null_microinstruction()
     for name, value in inst.items():
         name = name.lower()
         if name == "maddr":
+            if isinstance(value, str):
+                value = labels[value]
             curr["sela"] = (value >> 7) & 0x1F
             curr["selb"] = (value >> 2) & 0x1F
             curr["selc"] = (value & 0b11) << 3
@@ -79,7 +91,7 @@ def parse_microinstruction(inst: dict[str, int]) -> MicroInstruction:
         elif name not in curr:
             print("Unknown field name:", name)
             continue
-        curr[name] = value
+        curr[name] = cast(int, value)
     return curr
 
 
@@ -96,10 +108,21 @@ def microinstruction_to_vhdl(inst: MicroInstruction) -> str:
 
 
 def control_memory_gen(firmware: list[MicroProgram]) -> Iterable[str]:
+    def get_labels(p: MicroProgram):
+        yield (p.name, p.start)
+        addr = p.start
+        for inst in p.microcode:
+            if isinstance(inst, str):
+                yield (inst, addr)
+            else:
+                addr += 1
+
+    labels = {k: v for p in firmware for k, v in get_labels(p)}
     for program in firmware:
         yield f"-- {program.name}"
-        for i, inst in enumerate(program.microcode):
-            inst = parse_microinstruction(inst)
+        code = (x for x in program.microcode if isinstance(x, dict))
+        for i, inst in enumerate(code):
+            inst = parse_microinstruction(inst, labels)
             addr = program.start + i
             yield f"{addr} => {microinstruction_to_vhdl(inst)},"
     yield f"others => {microinstruction_to_vhdl(null_microinstruction())}"

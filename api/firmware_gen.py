@@ -63,20 +63,25 @@ BOOTLOADER: Final[list[MicroProgram]] = [
         {"excode": 8, "t11": 1, "c5": 1},
         {"ma": 1, "mb": 0b01, "cop": 0b00111, "t6": 1, "mr": 1, "lc": 1, "selc": 1}, # x1 <- 1 sll 8
         # Read segment header
+        "read_header",
         {"excode": 1, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
-        {"b": 1, "maddr": 0b111111100000},                     # read UART word
+        {"b": 1, "maddr": "read_word_uart"},                   # read UART word
+        "read_addr",
         {"mr": 1, "lc": 1, "sela": 3, "selc": 4, "t9": 1},     # x4 <- x3 (addr)
         {"excode": 2, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
-        {"b": 1, "maddr": 0b111111100000},                     # read UART word
+        {"b": 1, "maddr": "read_word_uart"},                   # read UART word
+        "read_size",
         # x5 <- x3 * 4 (size)
         {"mr": 1, "lc": 1, "sela": 3, "selc": 5, "mb": 0b10, "cop": 0b01100, "t6": 1},
         # if x4 == 0 && x5 == 0 (x4 | x5 == 0), stop loading
         {"mr": 1, "sela": 4, "selb": 5, "cop": 0b00010, "selp": 0b11, "m7": 1, "c7": 1},
-        {"cond": 6, "maddr": 0b111110010010},
+        {"cond": 6, "maddr": "stop_loading"},
         # Read segment
         # do while x5 > 0
+            "read_segment",
             {"excode": 0, "t11": 1, "mr": 1, "lc": 1, "selc": 30}, # setup return code
-            {"b": 1, "maddr": 0b111111000000},                     # read UART byte
+            {"b": 1, "maddr": "read_byte_uart"},                   # read UART byte
+            "read_section_byte",
             # MEM[x4++] <- x3
             {"mr": 1, "sela": 4, "t9": 1, "c0": 1}, # mar <- addr
             {
@@ -86,12 +91,14 @@ BOOTLOADER: Final[list[MicroProgram]] = [
             # x5 += -1
             {"mr": 1, "lc": 1, "sela": 5, "selc": 5, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
             # if x5 != 0, loop
-            {"cond": 6, "b": 1, "maddr": 0b111110001011},
-        {"b": 1, "maddr": 0b111110000011}, # Loop read segment header
+            {"cond": 6, "b": 1, "maddr": "read_segment"},
+        {"b": 1, "maddr": "read_header"}, # Loop read segment header
         # Stop loading
         # Read entrypoint
+        "stop_loading",
         {"excode": 3, "t11": 1, "mr": 1, "lc": 1, "selc": 31}, # setup return code
-        {"b": 1, "maddr": 0b111111100000},                     # read UART word
+        {"b": 1, "maddr": "read_word_uart"},                   # read UART word
+        "read_entrypoint",
         {
             "mr": 1, "sela": 3, "t9": 1, "c2": 1, # pc <- x3 (entrypoint)
             "b": 1, "a0": 1, # Start running user code
@@ -102,15 +109,15 @@ BOOTLOADER: Final[list[MicroProgram]] = [
     MicroProgram("read_byte_uart", None, 0b111111000000, [
         {"excode": 0, "t11": 1, "c4": 1, "c1": 1, "selp": 0b11, "m7": 1, "c7": 1}, # reset flag registers
         {"mr": 1, "sela": 1, "mb": 0b10, "cop": 0b01010, "t6": 1, "c0": 1},        # mar <- read status addr
-        {"ta": 1, "ior": 1, "m1": 1, "c1": 1, "t1": 1, "c4": 1, "ma": 1, "mb": 0b11, "cop": 0b00001, "selp": 0b11, "m7": 1, "c7": 1, "cond": 6, "maddr": 0b111111000010}, # Spin lock
+        "spin_lock", {"ta": 1, "ior": 1, "m1": 1, "c1": 1, "t1": 1, "c4": 1, "ma": 1, "mb": 0b11, "cop": 0b00001, "selp": 0b11, "m7": 1, "c7": 1, "cond": 6, "maddr": "spin_lock"}, # Spin lock
         {"mr": 1, "sela": 1, "t9": 1, "c0": 1}, # mar <- read addr
         {"ta": 1, "ior": 1, "m1": 1, "c1": 1},  # mbr <- UART byte
         # select return maddr based on x30
         # if x30 | 0 == 0 return to read section byte
         {"mr": 1, "sela": 30, "cop": 0b00010, "selp": 0b11, "m7": 1, "c7": 1},
-        {"cond": 6, "maddr": 0b111110001101},
+        {"cond": 6, "maddr": "read_section_byte"},
         # else return to read word byte
-        {"b": 1, "maddr": 0b111111100100}
+        {"b": 1, "maddr": "read_word_byte"}
     ]),
 
     # read word in little endian. Store result in x3
@@ -118,43 +125,48 @@ BOOTLOADER: Final[list[MicroProgram]] = [
         {"excode": 4, "t11": 1, "mr": 1, "lc": 1, "selc": 2}, # x2 <- 4 (counter)
         {"excode": 0, "t11": 1, "mr": 1, "lc": 1, "selc": 3}, # x3 <- 0 (word buf)
         # do while x2 > 0
+            "byte_loop",
             {"excode": 1, "t11": 1, "mr": 1, "lc": 1, "selc": 30}, # setup return code
-            {"b": 1, "maddr": 0b111111000000},                     # read UART byte
-            {"t1": 1, "c4": 1}, # rt1 <- UART byte
+            {"b": 1, "maddr": "read_byte_uart"},                   # read UART byte
+            "read_word_byte",
+            {"t1": 1, "c4": 1},                                    # rt1 <- UART byte
             # add byte to accumulator (x3 <- (x3 | byte) ror 8)
             {"mr": 1, "ma": 1, "selb": 3, "cop": 0b00010, "t6": 1, "c4": 1},             # rt1 <- x3 | byte
             {"ma": 1, "mb": 0b01, "cop": 0b01000, "t6": 1, "mr": 1, "lc": 1, "selc": 3}, # x3 <- rt1 ror 8
             {"mr": 1, "lc": 1, "sela": 2, "selc": 2, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1}, # x2 += -1
             # if x2 != 0, loop
-            {"cond": 6, "b": 1, "maddr": 0b111111100010},
+            {"cond": 6, "b": 1, "maddr": "byte_loop"},
         # select return maddr based on x31
         # if x31 - 1 == 0 (x31 == 1) return to read section addr
         {"mr": 1, "lc": 1, "sela": 31, "selc": 31, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
-        {"cond": 6, "maddr": 0b111110000101},
+        {"cond": 6, "maddr": "read_addr"},
         # if x31 - 2 == 0 (x31 == 2) return to read section size
         {"mr": 1, "lc": 1, "sela": 31, "selc": 31, "mb": 0b11, "cop": 0b01011, "t6": 1, "selp": 0b11, "m7": 1, "c7": 1},
-        {"cond": 6, "maddr": 0b111110001000},
+        {"cond": 6, "maddr": "read_size"},
         # else return to read entry point
-        {"b": 1, "maddr": 0b111110010100}
+        {"b": 1, "maddr": "read_entrypoint"}
     ]),
 ]  # fmt: skip
 
 if __name__ == "__main__":
     microprograms = [
-        ("fetch", None, 0, [
+        ("begin", None, 0, [
             {"mr": 1, "selc": 0, "excode": 0, "t11": 1, "lc": 1},
             # Check async interrupts
-            {"cond": 1, "maddr": 7},
+            {"cond": 1, "maddr": "mrti"},
             # Fetch
+            "fetch",
             {"t2": 1, "c0": 1},
             {"ta": 1},
             {"r": 1, "m1": 1, "c1": 1, "bw": 0b11},
             {"m2": 1, "c2": 1, "t1": 1, "c3": 1},
             {"a0": 1, "b": 0},
             # mrti
+            "mrti",
             {"inta": 1, "m1": 1, "c1": 1},
             {"t1": 1, "c4": 1},
             # csw_rt1
+            "csw_rt1",
             {"mr": 1, "sela": 2, "selc": 2, "mb": 0b10, "cop": 0b01011, "t6": 1, "lc": 1, "c0": 1},
             {"t2": 1, "c1": 1},
             {"w": 1, "ta": 1, "td": 1, "bw": 0b11},
@@ -168,7 +180,7 @@ if __name__ == "__main__":
             {"ta": 1},
             {"ta": 1, "r": 1, "m1": 1, "c1": 1, "bw": 0b11},
 
-            {"cond": 0, "b": 1, "maddr": 2, "c2": 1, "t1": 1, "selp": 0b01, "u": 0, "m7": 1, "c7": 1}
+            {"cond": 0, "b": 1, "maddr": "fetch", "c2": 1, "t1": 1, "selp": 0b01, "u": 0, "m7": 1, "c7": 1}
         ]),
         # RV32I
         ("lui", "-------------------------0110111", 2048, [
@@ -290,16 +302,16 @@ if __name__ == "__main__":
         ("slti", "-----------------010-----0010011", 2126, [
             {"offset": 1, "t3": 1, "c5": 1},
             {"sela": 15, "mb": 0b01, "cop": 0b01011, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 9, "b": 1, "maddr": 2130},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
+            {"cond": 9, "b": 1, "maddr": "slti0"},
+            {         "b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
+            "slti0", {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
         ]),
         ("sltiu", "-----------------011-----0010011", 2131, [
             {"offset": 1, "t3": 1, "c5": 1},
             {"sela": 15, "mb": 0b01, "cop": 0b10111, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 9, "b": 1, "maddr": 2135},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
+            {"cond": 9, "b": 1, "maddr": "sltiu0"},
+            {          "b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
+            "sltiu0", {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
         ]),
         ("xori", "-----------------100-----0010011", 2136, [
             {"offset": 1, "t3": 1, "c5": 1},
@@ -336,15 +348,15 @@ if __name__ == "__main__":
         ]),
         ("slt", "0000000----------010-----0110011", 2151, [
             {"sela": 15, "selb": 20, "cop": 0b01011, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 9, "b": 1, "maddr": 2154},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
+            {"cond": 9, "b": 1, "maddr": "slt0"},
+            {        "b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
+            "slt0", {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
         ]),
         ("sltu", "0000000----------011-----0110011", 2155, [
             {"sela": 15, "selb": 20, "cop": 0b10111, "selp": 0b11, "m7": 1, "c7": 1},
-            {"cond": 9, "b": 1, "maddr": 2158},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
-            {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
+            {"cond": 9, "b": 1, "maddr": "sltu0"},
+            {         "b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 1, "t11": 1},
+            "sltu0", {"b": 1, "a0": 1, "selc": 7, "lc": 1, "excode": 0, "t11": 1}
         ]),
         ("xor", "0000000----------100-----0110011", 2159, [
             {"b": 1, "a0": 1, "sela": 15, "selb": 20, "selc": 7, "cop": 0b00100, "t6": 1, "lc": 1}
@@ -365,7 +377,7 @@ if __name__ == "__main__":
             {"b": 1, "a0": 1}
         ]),
         ("ecall", "00000000000000000000000001110011", 2165, [
-            {"cond": 0, "b": 1, "maddr": 9, "excode": 2, "t11": 1, "c4": 1}
+            {"cond": 0, "b": 1, "maddr": "csw_rt1", "excode": 2, "t11": 1, "c4": 1}
         ]),
         ("ebreak", "00000000000100000000000001110011", 2166, [
             {"b": 1, "a0": 1, "pause": 1}
@@ -411,7 +423,7 @@ if __name__ == "__main__":
             {"b": 1, "a0": 1, "iow": 1, "ta": 1, "td": 1}
         ]),
         ("illegal instruction", "--------------------------------", 2188, [
-            {"cond": 0, "b": 1, "maddr": 9, "excode": 0, "t11": 1, "c4": 1, "pause": 1}
+            {"cond": 0, "b": 1, "maddr": "csw_rt1", "excode": 0, "t11": 1, "c4": 1, "pause": 1}
         ]),
     ]  # fmt: skip
     microprograms = [MicroProgram(*x) for x in microprograms] + BOOTLOADER
