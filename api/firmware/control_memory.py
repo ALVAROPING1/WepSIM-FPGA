@@ -84,8 +84,7 @@ def parse_microinstruction(
             off = int(name[0] == "t")
             idx = int(name[1:]) - off
             name = name[0]
-            size = FIELD_SIZE[name]
-            value = curr[name] | (1 << (size - idx - 1))
+            value = curr[name] | (1 << idx)
         elif name == "c":
             name = "cond"
         elif name not in curr:

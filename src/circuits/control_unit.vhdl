@@ -6,9 +6,9 @@ package cpu_pkg is
     type control_signals is record
         lc: std_ulogic;
         ra, rb, rc: unsigned(4 downto 0);
-        t: std_ulogic_vector(1 to 12);
+        t: std_ulogic_vector(12 downto 1);
         ta, td: std_ulogic;
-        c: std_ulogic_vector(0 to 7);
+        c: std_ulogic_vector(7 downto 0);
         ma, m1, m2, m7, mh: std_ulogic;
         mb: unsigned(1 downto 0);
         cop: std_ulogic_vector(4 downto 0);
