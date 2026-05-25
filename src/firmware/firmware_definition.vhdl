@@ -22,7 +22,7 @@ package firmware_types is
         w, r, iow, ior, inta: std_ulogic;
         selp: std_ulogic_vector(1 downto 0);
         i, u: std_ulogic;
-        excode: std_ulogic_vector(3 downto 0);
+        excode: std_ulogic_vector(5 downto 0);
         pause: std_ulogic;
     end record;
 

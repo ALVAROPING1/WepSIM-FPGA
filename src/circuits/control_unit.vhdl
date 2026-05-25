@@ -16,7 +16,7 @@ package cpu_pkg is
         size, offset: unsigned(4 downto 0);
         selp: std_ulogic_vector(1 downto 0);
         interrupts, user: std_ulogic;
-        excode: std_ulogic_vector(3 downto 0);
+        excode: std_ulogic_vector(5 downto 0);
         instruction_finish: std_ulogic;
     end record;
 

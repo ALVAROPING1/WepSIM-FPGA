@@ -45,7 +45,7 @@ FIELD_SIZE: Final[MicroInstruction] = {
     "selp": 2,
     "i": 1,
     "u": 1,
-    "excode": 4,
+    "excode": 6,
     "pause": 1,
 }
 
