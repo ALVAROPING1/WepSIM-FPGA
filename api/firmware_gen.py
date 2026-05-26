@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Final
 
-from firmware.control_memory import MicroProgram, binary, microcode_gen
-from firmware.immediate_decoder import Encoding, decoder_gen
+from api.firmware.control_memory import MicroProgram, binary, microcode_gen
+from api.firmware.immediate_decoder import Encoding, decoder_gen
 
 
 @dataclass
