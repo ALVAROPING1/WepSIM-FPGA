@@ -13,28 +13,22 @@ CORS(app)
 
 @app.route("/build", methods=["POST"])
 def build():
-    try:
-        data = request.get_json()
-        firmware = Firmware.from_json(data).gen()
-        with open("./src/firmware/firmware.vhdl", "w") as f:
-            f.write(firmware)
-        prj.make()
-        return {}, 200
-    except Exception as e:
-        return {"error": e}, 400
+    data = request.get_json()
+    firmware = Firmware.from_json(data).gen()
+    with open("./src/firmware/firmware.vhdl", "w") as f:
+        f.write(firmware)
+    prj.make()
+    return {}, 200
 
 
 @app.route("/flash", methods=["POST"])
 def flash():
-    try:
-        data = request.get_json()
-        ram = cast(dict[str, str], data["data"])
-        data["data"] = {int(k, 16): v for k, v in ram.items()}
-        prj.prog()
-        flash_program(**data)
-        return {}, 200
-    except Exception as e:
-        return {"error": e}, 400
+    data = request.get_json()
+    ram = cast(dict[str, str], data["data"])
+    data["data"] = {int(k, 16): v for k, v in ram.items()}
+    prj.prog()
+    flash_program(**data)
+    return {}, 200
 
 
 app.run(debug=False)
