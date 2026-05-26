@@ -7,7 +7,7 @@ from api.firmware_gen import Firmware
 from api.fpga import prj
 from api.uart import flash_program
 
-app = Flask(__name__)
+app = Flask("WepSIM FPGA Server")
 CORS(app)
 
 
