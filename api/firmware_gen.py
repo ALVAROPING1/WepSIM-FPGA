@@ -10,13 +10,13 @@ class Firmware:
     encodings: list[Encoding]
     microprograms: list[MicroProgram]
     endianness: str
-    start: int
+    start: int = 0b111110000000
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "Firmware":
         encodings = [Encoding(**x) for x in data["encodings"]]
         microprograms = [MicroProgram(**x) for x in data["microprograms"]] + BOOTLOADER
-        return cls(encodings, microprograms, data["endianness"], data["start"])
+        return cls(encodings, microprograms, data["endianness"])
 
     def gen(self) -> str:
         control_memory, patterns, addrs = microcode_gen(self.microprograms)
