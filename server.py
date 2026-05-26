@@ -15,7 +15,7 @@ CORS(app)
 def build():
     try:
         data = request.get_json()
-        firmware = Firmware(**data).gen()
+        firmware = Firmware.from_json(data).gen()
         with open("./src/firmware/firmware.vhdl", "w") as f:
             f.write(firmware)
         prj.make()
