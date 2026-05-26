@@ -3,7 +3,7 @@ from typing import cast
 from flask import Flask, request
 from flask_cors import CORS
 
-from api.firmware_gen import Firmware
+from api.firmware import Firmware
 from api.fpga import prj
 from api.uart import flash_program
 
