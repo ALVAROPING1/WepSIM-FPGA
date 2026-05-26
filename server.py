@@ -18,7 +18,7 @@ def build():
     with open("./src/firmware/firmware.vhdl", "w") as f:
         f.write(firmware)
     prj.make()
-    return {}, 200
+    return {"status": "Build OK"}, 200
 
 
 @app.route("/flash", methods=["POST"])
@@ -28,7 +28,7 @@ def flash():
     data["data"] = {int(k, 16): v for k, v in ram.items()}
     prj.prog()
     flash_program(**data)
-    return {}, 200
+    return {"status": "Flash OK"}, 200
 
 
 app.run(debug=False)
