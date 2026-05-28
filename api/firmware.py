@@ -15,7 +15,10 @@ class Firmware:
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "Firmware":
         encodings = [Encoding(**x) for x in data["encodings"]]
-        microprograms = [MicroProgram(pattern=x.pop("pattern", None), **x) for x in data["microprograms"]] + BOOTLOADER
+        microprograms = [
+            MicroProgram(pattern=x.pop("pattern", None), **x)
+            for x in data["microprograms"]
+        ] + BOOTLOADER
         return cls(encodings, microprograms, data["endianness"])
 
     def gen(self) -> str:
