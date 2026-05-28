@@ -1,0 +1,15 @@
+services:
+  server:
+    build:
+      context: .
+      target: prod
+    stdin_open: true
+    tty: true
+    privileged: true # Required to be able to flash the FPGA
+    network_mode: host
+    # For running the gui:
+    # environment:
+    #   - DISPLAY=$DISPLAY
+    # volumes:
+    #   - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    # entrypoint: "vivado"
