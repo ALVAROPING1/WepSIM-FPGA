@@ -1,7 +1,7 @@
 [project]
-name = "creator-wepsim-vhdl"
+name = "wepsim-fpga"
 version = "0.1.0"
-description = "Add your description here"
+description = "FPGA implementation of WepSIM's Elemental Processor"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
