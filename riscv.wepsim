@@ -1,0 +1,1000 @@
+firmware {
+    version = 2,
+    rel_mult = 2,
+    pc_rel_offset = -4,
+    endian = little,
+    immediates = '{"sign_extend": false, "padding": 32, "ranges": []},
+                  {"sign_extend": true, "padding": 0, "ranges": [[31, 20]]},
+                  {"sign_extend": true, "padding": 0, "ranges": [[31, 25], [11, 7]]},
+                  {"sign_extend": true, "padding": 1, "ranges": [[31, 31], [7, 7], [30, 25], [11, 8]]},
+                  {"sign_extend": true, "padding": 12, "ranges": [[31, 12]]},
+                  {"sign_extend": true, "padding": 1, "ranges": [[31, 31], [19, 12], [20, 20], [30, 21]]}'
+}
+
+#
+# WepSIM (https://wepsim.github.io/wepsim/)
+#
+
+begin {
+              # ensure R0 is zero
+    begin:    (MR, SELC=0, EXCODE=0, T11, LC),
+
+              # if (INT) go mrti
+              (C=1, MADDR=mrti),
+
+    fetch:    (T2, C0),               # MAR <- PC
+              (TA),                   # Address bus <- MAR
+              (TA, R, M1, C1, BW=11), # MBR <- Mem[MAR]
+              (M2, C2, T1, C3),       # IR <- MBR, PC <- PC + 4
+              (A0, B=0),              # jump to associated microcode for op. code
+
+    mrti:     (INTA, M1, C1), # MBR <- DB <- INTV
+              (T1, C4),       # RT1 <- MBR
+
+    csw_rt1:  # push PC
+              (MR, SELA=10, SELC=10, MB=10, COP=1011, T6, LC, C0),
+              (T2, C1),
+              (W, TA, TD, BW=11),
+
+              # push SR
+              (MR, SELA=10, SELC=10, MB=10, COP=1011, T6, LC, C0),
+              (T8, C1),
+              (W, TA, TD, BW=11),
+
+              # load rti
+              (MA, MB=10, COP=1100, T6, C0), # MAR <- RT1*4
+              (TA),                          # Address bus <- MAR
+              (TA, R, M1, C1, BW=11),        # MBR <- MP[MAR]
+
+              # PC <- MAR and go fetch
+              (C=0, B, MADDR=fetch, C2, T1, SELP=1, U=0, M7, C7)
+}
+
+
+#
+# https://rv8.io/isa.html
+# RV32I
+# (More details at http://riscvbook.com/spanish/guia-practica-de-risc-v-1.0.5.pdf)
+#
+
+#  LUI rd,imm         Load Upper Immediate                     rd ← imm << 12
+lui rd imm {
+    oc(6:0)=0110111,
+    reg(11:7)=rd,
+    address-rel(31:12)=imm,
+    help='rd = (inm << 12)',
+    {
+        (B, A0, SELC=111, OFFSET=100, T3, LC)
+    }
+}
+
+#  AUIPC rd,offset         Add Upper Immediate to PC         rd ← pc + (offset << 12)
+auipc rd offset {
+    oc(6:0)=0010111,
+    reg(11:7)=rd,
+    imm(31:12)=offset,
+    help='rd = pc + (offset << 12)',
+    {
+
+        (T2, C4),                                     # RT1 <- PC
+        (COP=1011, MA, MB=10, T6, C4),                # RT1 <- RT1 - 4
+        (OFFSET=100, T3, C5),                         # RT2 <- offset
+        (B, A0, SELC=111, COP=1010, MA, MB=1, T6, LC) # rd <- RT1 + RT2
+    }
+}
+
+#  JAL rd,offset        Jump and Link           rd ← pc + length(inst)
+#                                               pc ← pc + offset
+jal rd offset {
+    oc(6:0)=1101111,
+    reg(11:7)=rd,
+    address-rel(30:21|20|19:12|31)=offset,
+    help='rd = pc; pc = pc + 4*sext(offset)',
+    {
+        (SELC=111, T2, LC, C4),             # (rd, RT1) <- PC
+        (COP=1011, MA, MB=10, T6, C4),      # RT1 <- RT1 - 4
+        (OFFSET=101, T3, C5),               # RT2 <- offset
+        (B, A0, COP=1010, MA, MB=1, T6, C2) # PC <- RT1 + RT2
+    }
+}
+
+#  JALR rd,rs1,offset   Jump and Link Register   rd ← pc + length(inst)
+#                                              	 pc ← (rs1 + offset) & -2
+jalr rd rs1 offset {
+    oc(6:0)=1100111,
+    eoc(14:12)=000,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    address-rel(31:20)=offset,
+    help='rd = pc; pc = rs1 + 4*offset',
+    {
+        (OFFSET=1, T3, C5),                         # RT2 <- offset
+        (SELA=1111, COP=1010, MB=1, T6, C4),        # RT1 <- rs1 + RT2
+        (COP=101, MA, MB=11, T6, C4),               # RT1 <- RT1 >> 1
+        (SELC=111, COP=111, MA, MB=11, C6, T2, LC), # rd <- PC, RT3 <- RT1 << 1
+        (B, A0, T7, C2)                             # PC <- RT3
+    }
+}
+
+#  BEQ rs1,rs2,offset         Branch Equal                         if rs1 = rs2 then pc ← pc + offset
+beq rs1 rs2 offset {
+    oc(6:0)=1100011,
+    eoc(14:12)=000,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    address-rel(11:8|30:25|7|31)=offset,
+    help='if (rs1 == rs2) pc += 2*offset',
+    {
+        (SELA=1111, SELB=10100, COP=1011, SELP=11, M7, C7, T2, C4), # rs1 - rs2, RT1 <- PC
+        (C=110, B, MADDR=begin, COP=1011, MA, MB=10, T6, C4),       # RT1 <- RT1 - 4, if Z=0 then go to begin
+        (OFFSET=11, T3, C5),                                        # RT2 <- offset
+        (B, A0, MA, MB=1, COP=1010, T6, C2)                         # PC <- RT1 + RT2
+    }
+}
+
+#  BNE rs1,rs2,offset         Branch Not Equal                     if rs1 ≠ rs2 then pc ← pc + offset
+bne rs1 rs2 offset {
+    oc(6:0)=1100011,
+    eoc(14:12)=001,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    address-rel(11:8|30:25|7|31)=offset,
+    help='if (rs1 != rs2) pc += 2*offset',
+    {
+        (SELA=1111, SELB=10100, COP=1011, SELP=11, M7, C7, T2, C4), # rs1 - rs2, RT1 <- PC
+        (C=110, MADDR=begin, COP=1011, MA, MB=10, T6, C4),          # RT1 <- RT1 - 4, if Z=1 then go to begin
+        (OFFSET=11, T3, C5),                                        # RT2 <- offset
+        (B, A0, MA, MB=1, COP=1010, T6, C2)                         # PC <- RT1 + RT2
+    }
+}
+
+#  BLT rs1,rs2,offset         Branch Less Than                     if rs1 < rs2 then pc ← pc + offset
+blt rs1 rs2 offset {
+    oc(6:0)=1100011,
+    eoc(14:12)=100,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    address-rel(11:8|30:25|7|31)=offset,
+    help='if (rs1 < rs2) pc += 2*offset',
+    {
+        (SELA=1111, SELB=10100, COP=1011, SELP=11, M7, C7, T2, C4), # rs1 - rs2, RT1 <- PC
+        (C=1001, B, MADDR=begin, COP=1011, MA, MB=10, T6, C4),      # RT1 <- RT1 - 4, if C=0 then go to begin
+        (OFFSET=11, T3, C5),                                        # RT2 <- offset
+        (B, A0, MA, MB=1, COP=1010, T6, C2)                         # PC <- RT1 + RT2
+    }
+}
+
+#  BGE rs1,rs2,offset         Branch Greater than Equal             if rs1 ≥ rs2 then pc ← pc + offset
+bge rs1 rs2 offset {
+    oc(6:0)=1100011,
+    eoc(14:12)=101,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    address-rel(11:8|30:25|7|31)=offset,
+    help='if (rs1 >= rs2) pc += 2*offset',
+    {
+        (SELA=1111, SELB=10100, COP=1011, SELP=11, M7, C7, T2, C4), # rs1 - rs2, RT1 <- PC
+        (C=1001, MADDR=begin, COP=1011, MA, MB=10, T6, C4),         # RT1 <- RT1 - 4, if C=1 then go to begin
+        (OFFSET=11, T3, C5),                                        # RT2 <- offset
+        (B, A0, MA, MB=1, COP=1010, T6, C2)                         # PC <- RT1 + RT2
+    }
+}
+
+#  BLTU rs1,rs2,offset         Branch Less Than Unsigned             if rs1 < rs2 then pc ← pc + offset
+bltu rs1 rs2 offset {
+    oc(6:0)=1100011,
+    eoc(14:12)=110,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    address-rel(11:8|30:25|7|31)=offset,
+    help='if (ux(rs1) < ux(rs2)) pc += 2*offset',
+    {
+        (SELA=1111, SELB=10100, COP=10111, SELP=11, M7, C7, T2, C4), # rs1 - rs2 (unsigned), RT1 <- PC
+        (C=1001, B, MADDR=begin, COP=1011, MA, MB=10, T6, C4),       # RT1 <- RT1 - 4, if C=0 then go to begin
+        (OFFSET=11, T3, C5),                                         # RT2 <- offset
+        (B, A0, MA, MB=1, COP=1010, T6, C2)                          # PC <- RT1 + RT2
+    }
+}
+
+#  BGEU rs1,rs2,offset         Branch Greater than Equal Unsigned         if rs1 ≥ rs2 then pc ← pc + offset
+bgeu rs1 rs2 offset {
+    oc(6:0)=1100011,
+    eoc(14:12)=111,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    address-rel(11:8|30:25|7|31)=offset,
+    help='if (ux(rs1) >= ux(rs2)) pc += 2*offset',
+    {
+        (SELA=1111, SELB=10100, COP=10111, SELP=11, M7, C7, T2, C4), # rs1 - rs2 (unsigned), RT1 <- PC
+        (C=1001, MADDR=begin, COP=1011, MA, MB=10, T6, C4),          # RT1 <- RT1 - 4, if C=0 then go to begin
+        (OFFSET=11, T3, C5),                                         # RT2 <- offset
+        (B, A0, MA, MB=1, COP=1010, T6, C2)                          # PC <- RT1 + RT2
+    }
+}
+
+#  LB rd,offset(rs1)         Load Byte                         rd ← s8[rs1 + offset]
+lb rd offset(rs1) {
+    oc(6:0)=0000011,
+    eoc(14:12)=000,
+    reg(11:7)=rd,
+    imm(31:20)=offset,
+    reg(19:15)=rs1,
+    help='rd = (00, 00, 00, MEM[rs1 + offset])',
+    {
+        (OFFSET=1, T3, C5),                  # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (TA),                                # Address bus <- MAR
+        (TA, R, M1, C1, BW=0, SE),           # MBR <- (byte) Mem[MAR]
+        (B, A0, SELC=111, T1, LC)            # rd <- MBR
+    }
+}
+
+#  LH rd,offset(rs1)         Load Half                         rd ← s16[rs1 + offset]
+lh rd offset(rs1) {
+    oc(6:0)=0000011,
+    eoc(14:12)=001,
+    reg(11:7)=rd,
+    imm(31:20)=offset,
+    reg(19:15)=rs1,
+    help='rd = (00, 00, MEM[rs1+offset+1], MEM[rs1+offset])',
+    {
+        (OFFSET=1, T3, C5),                  # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (TA),                                # Address bus <- MAR
+        (TA, R, M1, C1, BW=1, SE),           # MBR <- (half) Mem[MAR]
+        (B, A0, SELC=111, T1, LC)            # rd <- MBR
+    }
+}
+
+#  LW rd,offset(rs1)         Load Word                         rd ← s32[rs1 + offset]
+lw rd offset(rs1) {
+    oc(6:0)=0000011,
+    eoc(14:12)=010,
+    reg(11:7)=rd,
+    imm(31:20)=offset,
+    reg(19:15)=rs1,
+    help='rd = (MEM[rs1+offset+3] .. MEM[rs1+offset])',
+    {
+        (OFFSET=1, T3, C5),                  # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (TA),                                # Address bus <- MAR
+        (TA, R, M1, C1, BW=11, SE),          # MBR <- Mem[MAR]
+        (B, A0, SELC=111, T1, LC)            # rd <- MBR
+    }
+}
+
+#  LBU rd,offset(rs1)         Load Byte Unsigned                     rd ← u8[rs1 + offset]
+lbu rd offset(rs1) {
+    oc(6:0)=0000011,
+    eoc(14:12)=100,
+    reg(11:7)=rd,
+    imm(31:20)=offset,
+    reg(19:15)=rs1,
+    help='rd = (00, 00, 00, ux(MEM[rs1 + offset]))',
+    {
+        (OFFSET=1, T3, C5),                  # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (TA),                                # Address bus <- MAR
+        (TA, R, M1, C1, BW=0),               # MBR <- (byte unsigned) Mem[MAR]
+        (B, A0, SELC=111, T1, LC)            # rd <- MBR
+    }
+}
+
+#  LHU rd,offset(rs1)         Load Half Unsigned                     rd ← u16[rs1 + offset]
+lhu rd offset(rs1) {
+    oc(6:0)=0000011,
+    eoc(14:12)=101,
+    reg(11:7)=rd,
+    imm(31:20)=offset,
+    reg(19:15)=rs1,
+    help='rd = (00, 00, ux(MEM[rs1+offset+1]), ux(MEM[rs1+offset]))',
+    {
+        (OFFSET=1, T3, C5),                  # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (TA),                                # Address bus <- MAR
+        (TA, R, M1, C1, BW=1),               # MBR <- (half unsigned) Mem[MAR]
+        (B, A0, SELC=111, T1, LC)            # rd <- MBR
+    }
+}
+
+#  SB rs2,offset(rs1)         Store Byte                         u8[rs1 + offset] ← rs2
+sb rs2 offset(rs1) {
+    oc(6:0)=0100011,
+    eoc(14:12)=000,
+    reg(24:20)=rs2,
+    address-rel(11:7|31:25)=offset,
+    reg(19:15)=rs1,
+    help='MEM[rs1 + offset] = rs2/8',
+    {
+        (OFFSET=10, T3, C5),                 # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (SELA=10100, T9, C1),                # MBR <- rs2
+        (B, A0, W, TA, TD, BW=0)             # Mem[MAR] <- (byte) MBR
+    }
+}
+
+#  SH rs2,offset(rs1)         Store Half                         u16[rs1 + offset] ← rs2
+sh rs2 offset(rs1) {
+    oc(6:0)=0100011,
+    eoc(14:12)=001,
+    reg(24:20)=rs2,
+    address-rel(11:7|31:25)=offset,
+    reg(19:15)=rs1,
+    help='MEM[rs1+offset+1 .. rs1+offset] = rs2/16',
+    {
+        (OFFSET=10, T3, C5),                 # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (SELA=10100, T9, C1),                # MBR <- rs2
+        (B, A0, W, TA, TD, BW=1)             # Mem[MAR] <- (half) MBR
+    }
+}
+
+#  SW rs2,offset(rs1)         Store Word                         u32[rs1 + offset] ← rs2
+sw rs2 offset(rs1) {
+    oc(6:0)=0100011,
+    eoc(14:12)=010,
+    reg(24:20)=rs2,
+    address-rel(11:7|31:25)=offset,
+    reg(19:15)=rs1,
+    help='MEM[rs1+offset+3 .. rs1+offset] = rs2',
+    {
+        (OFFSET=10, T3, C5),                 # RT2 <- offset
+        (SELA=1111, MB=1, COP=1010, T6, C0), # MAR <- rs1 + RT2
+        (SELA=10100, T9, C1),                # MBR <- rs2
+        (B, A0, W, TA, TD, BW=11)            # Mem[MAR] <- MBR
+    }
+}
+
+#  ADDI rd,rs1,imm         Add Immediate                         rd ← rs1 + sx(imm)
+addi rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(14:12)=000,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(31:20)=inm,
+    help='rd = rs1 + SignEx(inm)',
+    {
+        (OFFSET=1, T3, C5),
+        (B, A0, SELA=1111, SELC=111, MB=1, COP=1010, T6, LC)
+    }
+}
+
+#  SLTI rd,rs1,imm         Set Less Than Immediate             rd ← sx(rs1) < sx(imm)
+slti rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(14:12)=010,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(31:20)=inm,
+    help='rd = (rs1 < inm) ? 1 : 0',
+    {
+        (OFFSET=1, T3, C5),                           # RT2 <- imm
+        (SELA=1111, MB=1, COP=1011, SELP=11, M7, C7), # rs1 - RT2
+        (C=1001, B, MADDR=slti0),                     # if C=0 then go to slti0
+        (B, A0, SELC=111, LC, EXCODE=1, T11),         # rd <- 1
+ slti0: (B, A0, SELC=111, LC, EXCODE=0, T11)          # rd <- 0
+    }
+}
+
+#  SLTIU rd,rs1,imm         Set Less Than Immediate Unsigned         rd ← ux(rs1) < ux(imm)
+sltiu rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(14:12)=011,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(31:20)=inm,
+    help='rd = (ux(rs1) < ux(inm)) ? 1 : 0',
+    {
+        (OFFSET=1, T3, C5),                            # RT2 <- imm
+        (SELA=1111, MB=1, COP=10111, SELP=11, M7, C7), # rs1 - RT2 (unsigned)
+        (C=1001, B, MADDR=sltiu0),                     # if C=0 then go to sltiu0
+        (B, A0, SELC=111, LC, EXCODE=1, T11),          # rd <- 1
+sltiu0: (B, A0, SELC=111, LC, EXCODE=0, T11)           # rd <- 0
+    }
+}
+
+#  XORI rd,rs1,imm         Xor Immediate                         rd ← ux(rs1) ⊕ ux(imm)
+xori rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(14:12)=100,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(31:20)=inm,
+    help='rd = ux(rs1) ^ ux(inm)',
+    {
+        (OFFSET=1, T3, C5),
+        (B, A0, SELA=1111, SELC=111, MB=1, COP=100, T6, LC)
+    }
+}
+
+#  ORI rd,rs1,imm         Or Immediate                         rd ← ux(rs1) ∨ ux(imm)
+ori rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(14:12)=110,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(31:20)=inm,
+    help='rd = rs1 | inm',
+    {
+        (OFFSET=1, T3, C5),
+        (B, A0, SELA=1111, SELC=111, MB, COP=10, T6, LC)
+    }
+}
+
+#  ANDI rd,rs1,imm         And Immediate                         rd ← ux(rs1) ∧ ux(imm)
+andi rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(14:12)=111,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(31:20)=inm,
+    help='rd = rs1 & inm',
+    {
+        (OFFSET=1, T3, C5),
+        (B, A0, SELA=1111, SELC=111, MB=1, COP=1, T6, LC)
+    }
+}
+
+#  SLLI rd,rs1,imm         Shift Left Logical Immediate             rd ← ux(rs1) « ux(imm)
+slli rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(31:25|14:12)=0000000001,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(24:20)=inm,
+    help='rd = (rs1 << inm)',
+    {
+        (OFFSET=1, T3, C5),
+        (B, A0, SELA=1111, SELC=111, MB=1, COP=111, T6, LC)
+    }
+}
+
+#  SRLI rd,rs1,imm         Shift Right Logical Immediate             rd ← ux(rs1) » ux(imm)
+srli rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(31:25|14:12)=0000000101,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(24:20)=inm,
+    help='rd = (rs1 >>> inm)',
+    {
+        (OFFSET=1, T3, C5),
+        (B, A0, SELA=1111, SELC=111, MB=1, COP=101, T6, LC)
+    }
+}
+
+#  SRAI rd,rs1,imm         Shift Right Arithmetic Immediate         rd ← sx(rs1) » ux(imm)
+srai rd rs1 inm {
+    oc(6:0)=0010011,
+    eoc(31:25|14:12)=0100000101,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    imm(24:20)=inm,
+    help='rd = (rs1 >> inm)',
+    {
+        (OFFSET=1, T3, C5),
+        (B, A0, SELA=1111, SELC=111, MB=1, COP=110, T6, LC)
+    }
+}
+
+#  ADD rd,rs1,rs2         Add                                 rd ← sx(rs1) + sx(rs2)
+add reg1 reg2 reg3 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000000,
+    reg(11:7)=reg1,
+    reg(19:15)=reg2,
+    reg(24:20)=reg3,
+    help='r1 = r2 + r3',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=1010, T6, LC)
+    }
+}
+
+#  SUB rd,rs1,rs2         Subtract                         rd ← sx(rs1) - sx(rs2)
+sub reg1 reg2 reg3 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0100000000,
+    reg(11:7)=reg1,
+    reg(19:15)=reg2,
+    reg(24:20)=reg3,
+    help='r1 = r2 - r3',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=1011, T6, LC)
+    }
+}
+
+#  SLL rd,rs1,rs2         Shift Left Logical                     rd ← ux(rs1) « rs2
+sll rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000001,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='rd = rs1 <<< rs2',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=111, T6, LC)
+    }
+}
+
+#  SLT rd,rs1,rs2         Set Less Than                         rd ← sx(rs1) < sx(rs2)
+slt rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000010,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='rd = (rs1 < rs2) ? 1 : 0',
+    {
+        (SELA=1111, SELB=10100, COP=1011, SELP=11, M7, C7), # rs1 - rs2
+        (C=1001, B, MADDR=slt0),                            # if C=0 then go to slt0
+        (B, A0, SELC=111, LC, EXCODE=1, T11),               # rd <- 1
+  slt0: (B, A0, SELC=111, LC, EXCODE=0, T11)                # rd <- 0
+    }
+}
+
+#  SLTU rd,rs1,rs2         Set Less Than Unsigned                     rd ← ux(rs1) < ux(rs2)
+sltu rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000011,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='rd = (ux(rs1) < ux(rs2)) ? 1 : 0',
+    {
+        (SELA=1111, SELB=10100, COP=10111, SELP=11, M7, C7), # rs1 - rs2 (unsigned)
+        (C=1001, B, MADDR=sltu0),                            # if C=0 then go to sltu0
+        (B, A0, SELC=111, LC, EXCODE=1, T11),                # rd <- 1
+ sltu0: (B, A0, SELC=111, LC, EXCODE=0, T11)                 # rd <- 0
+    }
+}
+
+#  XOR rd,rs1,rs2         Xor                                 rd ← ux(rs1) ⊕ ux(rs2)
+xor reg1 reg2 reg3 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000100,
+    reg(11:7)=reg1,
+    reg(19:15)=reg2,
+    reg(24:20)=reg3,
+    help='r1 = r2 ^ r3',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=100, T6, LC)
+    }
+}
+
+#  SRL rd,rs1,rs2         Shift Right Logical                     rd ← ux(rs1) » rs2
+srl rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000101,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='rd = rs1 >>> rs2',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=101, T6, LC)
+    }
+}
+
+#  SRA rd,rs1,rs2         Shift Right Arithmetic                     rd ← sx(rs1) » rs2
+sra rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0100000101,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='rd = rs1 >> rs2',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=110, T6, LC)
+    }
+}
+
+#  OR rd,rs1,rs2         Or                                 rd ← ux(rs1) ∨ ux(rs2)
+or reg1 reg2 reg3 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000110,
+    reg(11:7)=reg1,
+    reg(19:15)=reg2,
+    reg(24:20)=reg3,
+    help='r1 = r2 | r3',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=10, T6, LC)
+    }
+}
+
+#  AND rd,rs1,rs2         And                                 rd ← ux(rs1) ∧ ux(rs2)
+and reg1 reg2 reg3 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000000111,
+    reg(11:7)=reg1,
+    reg(19:15)=reg2,
+    reg(24:20)=reg3,
+    help='r1 = r2 & r3',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=1, T6, LC)
+    }
+}
+
+#  FENCE pred,succ         Fence
+fence pred succ {
+    oc(6:0)=0001111,
+    eoc(14:12)=000,
+    imm(27:24)=pred,
+    imm(23:20)=succ,
+    {
+        (B, A0) # No-op
+    }
+}
+
+ecall {
+    oc(6:0)=1110011,
+    eoc(31:7)=0000000000000000000000000,
+    help='system call',
+    {
+        (C=0, B, MADDR=csw_rt1, EXCODE=10, T11, C4) # RT1 <- 2, csw_rt1(2)
+    }
+}
+
+ebreak {
+    oc(6:0)=1110011,
+    eoc(31:7)=0000000000010000000000000,
+    help='generate breakpoint',
+    {
+        (B, A0, PAUSE)
+    }
+}
+
+mret {
+    oc(6:0)=1110011,
+    eoc(31:7)=0011000000100000000000000,
+    help='return from event (interruption, exception, syscall)',
+    {
+        # if user mode then csw_rt1(0)
+        (C=100, MADDR=csw_rt1, EXCODE=0, T11, C4),
+
+        # pop SR
+        (MR, SELA=10, T9, C0),
+        (MR, SELA=10, SELC=10, MB=10, COP=1010, T6, LC, TA),
+        (TA, R, M1, C1, BW=11),
+        (T1, C7),
+
+        # pop PC
+        (MR, SELA=10, T9, C0),
+        (MR, SELA=10, SELC=10, MB=10, COP=1010, T6, LC, TA),
+        (TA, R, M1, C1, BW=11),
+        (B, A0, T1, C2)
+    }
+}
+
+#
+# https://rv8.io/isa.html
+# RV32M
+# (More details at http://riscvbook.com/spanish/guia-practica-de-risc-v-1.0.5.pdf)
+#
+
+# MUL rd,rs1,rs2         Multiply         rd ← ux(rs1) × ux(rs2)
+mul reg1 reg2 reg3 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000001000,
+    reg(11:7)=reg1,
+    reg(19:15)=reg2,
+    reg(24:20)=reg3,
+    help='reg1 = reg2 * reg3',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=1100, T6, LC)
+    }
+}
+
+# MULH rd,rs1,rs2         Multiply High Signed         rd ← (sx(rs1) × sx(rs2)) » xlen
+mulh rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000001001,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='reg1 = reg2/16 * reg3/16',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=11010, T6, LC)
+    }
+}
+
+# MULHSU rd,rs1,rs2         Multiply High Signed Unsigned         rd ← (sx(rs1) × ux(rs2)) » xlen
+mulhsu rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000001010,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='reg1 = reg2/16 * ux(reg3/16)',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=11100, T6, LC)
+    }
+}
+
+# MULHU rd,rs1,rs2         Multiply High Unsigned Unsigned         rd ← (ux(rs1) × ux(rs2)) » xlen
+mulhu rd rs1 rs2 {
+    oc(6:0)=0110011,
+    eoc(31:25|14:12)=0000001011,
+    reg(11:7)=rd,
+    reg(19:15)=rs1,
+    reg(24:20)=rs2,
+    help='reg1 = ux(reg2/16) * ux(reg3/16)',
+    {
+        (B, A0, SELA=1111, SELB=10100, SELC=111, COP=11011, T6, LC)
+    }
+}
+
+
+#
+# IN/OUT
+#
+
+in reg val {
+    oc(6:0)=0001011,
+    reg(11:7)=reg,
+    imm(31:16)=val,
+    help='reg = device_registers[val]',
+    {
+        # if user mode then csw_rt1(0)
+        (C=100, MADDR=csw_rt1, EXCODE=0, T11, C4),
+
+        (SIZE=10000, OFFSET=10000, SE=0, T3, C0), # MAR <- val
+        (TA, IOR, M1, C1),                        # MBR <- Devices[MAR]
+        (B, A0, SELC=111, T1, LC)                 # reg <- MBR
+    }
+}
+
+out reg val {
+    oc(6:0)=0101011,
+    reg(11:7)=reg,
+    imm(31:16)=val,
+    help='device_register[val] = reg',
+    {
+        # if user mode then csw_rt1(0)
+        (C=100, MADDR=csw_rt1, EXCODE=0, T11, C4),
+
+        (SIZE=10000, OFFSET=10000, SE=0, T3, C0), # MAR <- val
+        (SELA=111, T9, C1),                       # MBR <- reg
+        (B, A0, IOW, TA, TD)                      # Devices[MAR] <- MBR
+    }
+}
+
+
+#
+# Register naming
+#
+
+#        ABI Name       Description                        Saver
+#0        zero          Hard-wired zero                    --
+#1        ra            Return address                     Caller
+#2        sp            Stack pointer                      Callee
+#3        gp            Global pointer                     --
+#4        tp            Thread pointer                     --
+#5        t0            Temporaries                        Caller
+#6        t1            Temporaries                        Caller
+#7        t2            Temporaries                        Caller
+#8        s0/fp         Saved register/frame pointer       Caller
+#9        s1            Saved register                     Callee
+#10       a0            Function arguments/return values   Caller
+#11       a1            Function arguments/return values   Caller
+#12       a2            Function arguments                 Caller
+#13       a3            Function arguments                 Caller
+#14       a4            Function arguments                 Caller
+#15       a5            Function arguments                 Caller
+#16       a6            Function arguments                 Caller
+#17       a7            Function arguments                 Caller
+#18       s2            Saved registers                    Callee
+#19       s3            Saved registers                    Callee
+#20       s4            Saved registers                    Callee
+#21       s5            Saved registers                    Callee
+#22       s6            Saved registers                    Callee
+#23       s7            Saved registers                    Callee
+#24       s8            Saved registers                    Callee
+#25       s9            Saved registers                    Callee
+#26       s10           Saved registers                    Callee
+#27       s11           Saved registers                    Callee
+#28       t3            Temporaries                        Caller
+#29       t4            Temporaries                        Caller
+#30       t5            Temporaries                        Caller
+#31       t6            Temporaries                        Caller
+
+registers
+{
+    0=(zero,  x0),
+    1=(ra,    x1),
+    2=(sp,    x2) (stack_pointer),
+    3=(gp,    x3),
+    4=(tp,    x4),
+    5=(t0,    x5),
+    6=(t1,    x6),
+    7=(t2,    x7),
+    8=(s0,fp, x8),
+    9=(s1,    x9),
+    10=(a0,  x10),
+    11=(a1,  x11),
+    12=(a2,  x12),
+    13=(a3,  x13),
+    14=(a4,  x14),
+    15=(a5,  x15),
+    16=(a6,  x16),
+    17=(a7,  x17),
+    18=(s2,  x18),
+    19=(s3,  x19),
+    20=(s4,  x20),
+    21=(s5,  x21),
+    22=(s6,  x22),
+    23=(s7,  x23),
+    24=(s8,  x24),
+    25=(s9,  x25),
+    26=(s10, x26),
+    27=(s11, x27),
+    28=(t3,  x28),
+    29=(t4,  x29),
+    30=(t5,  x30),
+    31=(t6,  x31)
+}
+
+
+
+#
+# Pseudo-instructions
+# https://content.riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf
+#
+
+pseudoinstructions
+{
+    # nop        addi zero,zero,0        No operation
+    nop
+    {
+        addi zero zero 0
+    }
+
+    # li rd, expression        (several expansions)        Load immediate
+    li rd=reg, expression=imm
+    { 
+        addi rd x0 expression
+    }
+
+    #li rd=reg, expression=imm
+    #{
+    #    lui  rd,     sel(31,12,expression) ;
+    #    addu rd, rd, sel(11,0,expression)
+    #}
+
+    ## la rd, label        (several expansions)        Load address
+    #la rd=reg, label=imm
+    #{
+    #    lui  rd,     sel(31,12,label) ;
+    #    addu rd, rd, sel(11,0,label)
+    #}
+
+    la_test rd=reg, label=imm
+    {
+        auipc rd,     %pcrel_hi(label) ;
+        addi  rd, rd, %pcrel_lo(label)
+    }
+
+    # mv rd, rs1        addi rd, rs, 0        Copy register
+    mv rd=reg, rs=reg
+    {
+        addi rd, rs, 0
+    }
+
+    # not rd, rs1        xori rd, rs, -1        One’s complement
+    not rd=reg, rs=reg
+    {
+        xori rd, rs, -1
+    }
+
+    # neg rd, rs1        sub rd, x0, rs        Two’s complement
+    neg rd=reg, rs=reg
+    {
+        sub rd, zero, rs
+    }
+
+    # seqz rd, rs1        sltiu rd, rs, 1        Set if = zero
+    seqz rd=reg, rs1=reg
+    {
+        sltiu rd, rs, 1
+    }
+
+    # snez rd, rs1        sltu rd, x0, rs        Set if ≠ zero
+    snez rd=reg, rs1=reg
+    {
+        sltu rd, x0, rs
+    }
+
+    # sltz rd, rs1        slt rd, rs, x0        Set if < zero
+    sltz rd=reg, rs1=reg
+    {
+        slt rd, rs, x0
+    }
+
+    # sgtz rd, rs1        slt rd, x0, rs        Set if > zero
+    sgtz rd=reg, rs1=reg
+    {
+        slt rd, x0, rs
+    }
+
+    # beqz rs1, offset        beq rs, x0, offset        Branch if = zero
+    beqz rs=reg, offset=imm
+    {
+        beq rs, zero, offset
+    }
+
+    # bnez rs1, offset        bne rs, x0, offset        Branch if ≠ zero
+    bnez rs=reg, offset=imm
+    {
+        bne rs, zero, offset
+    }
+
+    # blez rs1, offset        bge x0, rs, offset        Branch if ≤ zero
+    blez rs=reg, offset=imm
+    {
+        bge zero, rs, offset
+    }
+
+    # bgez rs1, offset        bge rs, x0, offset        Branch if ≥ zero
+    bgez rs=reg, offset=imm
+    {
+        bge rs, zero, offset
+    }
+
+    # bltz rs1, offset        blt rs, x0, offset        Branch if < zero
+    bltz rs=reg, offset=imm
+    {
+        blt rs, zero, offset
+    }
+
+    # bgtz rs1, offset        blt x0, rs, offset        Branch if > zero
+    bgtz rs=reg, offset=imm
+    {
+        blt zero, rs, offset
+    }
+
+    # bgt rs, rt, offset        blt rt, rs, offset        Branch if >
+    bgt rs=reg, rt=reg, offset=imm
+    {
+        blt rt, rs, offset
+    }
+
+    # ble rs, rt, offset        bge rt, rs, offset        Branch if ≤
+    ble rs=reg, rt=reg, offset=imm
+    {
+        bge rt, rs, offset
+    }
+
+    # bgtu rs, rt, offset        bltu rt, rs, offset        Branch if >, unsigned
+    bgtu rs=reg, rt=reg, offset=imm
+    {
+        bltu rt, rs, offset
+    }
+
+    # bleu rs, rt, offset        bltu rt, rs, offset        Branch if ≤, unsigned
+    bleu rs=reg, rt=reg, offset=imm
+    {
+        bgeu rt, rs, offset
+    }
+
+    # j offset        jal x0, offset        Jump
+    j offset=imm
+    {
+        jal zero, offset
+    }
+
+    # jal offset        jal x1, offset        Jump register
+    #jal offset=imm
+    #{
+    #    jal ra, offset
+    #}
+
+    # jr rs            jalr x0, rs, 0        Jump register
+    jr rs=reg
+    {
+        jalr zero, rs, 0
+    }
+
+    # ret        jalr x0, x1, 0        Return from subroutine
+    ret
+    {
+        jalr zero, ra, 0
+    }
+}
