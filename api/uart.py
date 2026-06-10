@@ -85,6 +85,8 @@ def terminal():
             pass
         term.join()
         term.close()
+        term.console.cleanup()
+        print()
 
 
 def flash_program(data: dict[int, str], entrypoint: int, port: str):
