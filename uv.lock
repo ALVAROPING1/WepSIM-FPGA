@@ -33,35 +33,6 @@ wheels = [
 ]
 
 [[package]]
-name = "creator-wepsim-vhdl"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "flask" },
-    { name = "flask-cors" },
-    { name = "pyfpga" },
-    { name = "pyserial" },
-    { name = "typing-extensions" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "vunit-hdl" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "flask", specifier = ">=3.1.3" },
-    { name = "flask-cors", specifier = ">=6.0.2" },
-    { name = "pyfpga", specifier = ">=0.4.0" },
-    { name = "pyserial", specifier = ">=3.5" },
-    { name = "typing-extensions", specifier = ">=4.15.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "vunit-hdl", specifier = "==5.0.0.dev6" }]
-
-[[package]]
 name = "flask"
 version = "3.1.3"
 source = { registry = "https://pypi.org/simple" }
@@ -235,6 +206,35 @@ dependencies = [
     { name = "colorama" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4e/35/df9ec24b8bfad27cd3f4a34f9ef2fb4cce0439b6f356c248eddf7e27fc34/vunit_hdl-5.0.0.dev6.tar.gz", hash = "sha256:25400773cd887fcc2bcde9b4e8a7219cf749e7326c00587dab3b45e5c6d9011f", size = 729527, upload-time = "2025-05-11T09:10:00.282Z" }
+
+[[package]]
+name = "wepsim-fpga"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "flask" },
+    { name = "flask-cors" },
+    { name = "pyfpga" },
+    { name = "pyserial" },
+    { name = "typing-extensions" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "vunit-hdl" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "flask", specifier = ">=3.1.3" },
+    { name = "flask-cors", specifier = ">=6.0.2" },
+    { name = "pyfpga", specifier = ">=0.4.0" },
+    { name = "pyserial", specifier = ">=3.5" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "vunit-hdl", specifier = "==5.0.0.dev6" }]
 
 [[package]]
 name = "werkzeug"
