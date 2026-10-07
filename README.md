@@ -61,6 +61,11 @@ uv run test.py --gui "*<entityname>_tb[.<generic-params>].<testname>"
   - `constraints.xdc`: Mapping of inputs/outputs of the circuit to FPGA pins
   - `main.vhdl`: Top level element of the circuit
 - `tests/`: VHDL test benches for each of the components, using the same structure as `src/`
+  - Note: due to the complexity of testing a full CPU, the test benches for the `circuits/`
+    subdirectory as well as `main.vhdl` are mostly intended as a stub to load the
+    design in the simulator. Test conditions can be set on their respective test
+    benches, and the result can be manually analyzed after loading it in the
+    waveform viewer
 - `riscv.wepsim`: WepSIM firmware code implementing RISC-V's RV32I+Zmmul instructions
 - `server.py`: Entry point for WepSIM's REST server
 - `test.py`: Entry point for unit tests execution
